@@ -247,7 +247,7 @@ html = f"""<!DOCTYPE html>
     <div class="eyebrow">AURORA LIGHT · BLE CONTROLLER</div>
     <img src="data:image/png;base64,{icon_b64}" alt="Aurora Light">
     <h1>幻彩灯控<br>使用与协议文档</h1>
-    <div class="sub">无注册 · 无登录 · 仅联网检查更新<br>BLE 幻彩灯控制 App v1.1.0</div>
+    <div class="sub">无注册 · 无登录 · 仅联网检查更新<br>BLE 幻彩灯控制 App v1.1.1</div>
     <div class="meta">
       <span>Android 6.0+ · BLE 4.0+</span>
       <span>文档版本 1.0 · 2026-11</span>

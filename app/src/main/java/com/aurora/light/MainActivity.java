@@ -141,6 +141,10 @@ ScanSheet.Host {
     private TextView oneKeyOff;
     private TextView effectHint;
     private TextView versionLabel;
+    private LinearLayout changelogHistoryList;
+    private TextView changelogToggle;
+    private TextView changelogCurrentVersion;
+    private boolean changelogExpanded;
     private EditText ledCountInput;
     private TextView ledCountMinus;
     private TextView ledCountPlus;
@@ -208,6 +212,7 @@ ScanSheet.Host {
         this.buildModeTiles();
         this.buildColorDots();
         this.buildCustomColorDots();
+        this.buildChangelogHistory();
         this.bindActions();
         this.ble = new AuroraBleManager((Context)this, this);
         this.scanSheet = new ScanSheet(this, this);
@@ -327,6 +332,9 @@ ScanSheet.Host {
         this.oneKeyOff = (TextView)this.findViewById(R.id.oneKeyOff);
         this.effectHint = (TextView)this.findViewById(R.id.effectHint);
         this.versionLabel = (TextView)this.findViewById(R.id.versionLabel);
+        this.changelogHistoryList = (LinearLayout)this.findViewById(R.id.changelogHistoryList);
+        this.changelogToggle = (TextView)this.findViewById(R.id.changelogToggle);
+        this.changelogCurrentVersion = (TextView)this.findViewById(R.id.changelogCurrentVersion);
         this.ledCountInput = (EditText)this.findViewById(R.id.ledCountInput);
         this.ledCountMinus = (TextView)this.findViewById(R.id.ledCountMinus);
         this.ledCountPlus = (TextView)this.findViewById(R.id.ledCountPlus);
@@ -553,6 +561,8 @@ ScanSheet.Host {
             this.toggleDeveloperMode();
             return true;
         });
+        this.findViewById(R.id.changelogHeader).setOnClickListener(v -> this.toggleChangelog());
+        this.changelogToggle.setOnClickListener(v -> this.toggleChangelog());
         this.findViewById(R.id.devClear).setOnClickListener(v -> {
             this.devLines.clear();
             this.devLog.setText((CharSequence)"等待发送…");
@@ -838,6 +848,61 @@ ScanSheet.Host {
         }
         this.customStatus.setText((CharSequence)String.format(Locale.CHINA,
                 "共 %d 颗，已亮 %d 颗 · 点击切换亮/灭", this.customTotal, this.customSelected.size()));
+    }
+
+    private void buildChangelogHistory() {
+        this.versionLabel.setText((CharSequence)("v" + BuildConfig.VERSION_NAME));
+        this.changelogCurrentVersion.setText((CharSequence)("v" + BuildConfig.VERSION_NAME + " · 2026-11-14 01:30"));
+        this.changelogHistoryList.removeAllViews();
+        String[][] history = {
+                {"v1.1.0", "2026-11-14"},
+                {"v1.0.9", "2026-11-13"},
+                {"v1.0.8", "2026-11-08"},
+                {"v1.0.7", "2026-11-08"},
+                {"v1.0.6", "2026-11-08"},
+                {"v1.0.5", "2026-11-08"},
+                {"v1.0.4", "2026-11-08"},
+                {"v1.0.3", "2026-11-08"},
+                {"v1.0.2", "2026-11-08"},
+                {"v1.0.1", "2026-11-08"},
+                {"v1.0.0", "2026-11-08"}
+        };
+        for (int i = 0; i < history.length; i++) {
+            LinearLayout row = new LinearLayout((Context)this);
+            row.setOrientation(1);
+            row.setPadding(0, this.dp(12), 0, this.dp(12));
+
+            TextView version = new TextView((Context)this);
+            version.setText((CharSequence)(history[i][0] + " · " + history[i][1]));
+            version.setTextColor(this.getColor(R.color.mint_soft));
+            version.setTextSize(12.0f);
+            version.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+
+            TextView body = new TextView((Context)this);
+            body.setText((CharSequence)"修复了已知问题");
+            body.setTextColor(this.getColor(R.color.text_secondary));
+            body.setTextSize(11.0f);
+            body.setPadding(0, this.dp(5), 0, 0);
+
+            row.addView((View)version);
+            row.addView((View)body);
+            this.changelogHistoryList.addView((View)row);
+
+            if (i < history.length - 1) {
+                View divider = new View((Context)this);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, this.dp(1));
+                lp.topMargin = this.dp(2);
+                divider.setLayoutParams((ViewGroup.LayoutParams)lp);
+                divider.setBackgroundColor(0x1AFFFFFF);
+                this.changelogHistoryList.addView(divider);
+            }
+        }
+    }
+
+    private void toggleChangelog() {
+        this.changelogExpanded = !this.changelogExpanded;
+        this.changelogHistoryList.setVisibility(this.changelogExpanded ? 0 : 8);
+        this.changelogToggle.setText((CharSequence)(this.changelogExpanded ? "收起历史" : "查看历史"));
     }
 
     private void styleCustomLed(TextView button, int index, boolean on) {

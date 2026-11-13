@@ -101,7 +101,7 @@ jobs:
               "apkUrl": os.environ["APK_URL"],
               "sha256": os.environ["SHA256"],
               "changelog": "\n".join(lines),
-              "force": False
+              "force": True
           }, ensure_ascii=False, indent=2))
           PY
 

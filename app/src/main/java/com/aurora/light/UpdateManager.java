@@ -1,14 +1,21 @@
 package com.aurora.light;
 
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
@@ -98,17 +105,39 @@ public final class UpdateManager {
         if (activity.isFinishing() || activity.isDestroyed()) {
             return;
         }
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity)
-                .setTitle("发现新版本 " + info.versionName)
-                .setMessage(info.changelog + "\n\n当前版本：" + BuildConfig.VERSION_NAME)
-                .setPositiveButton("立即更新", (dialog, which) -> downloadAndInstall(activity, info))
-                .setCancelable(!info.force);
-        if (info.force) {
-            builder.setNegativeButton("退出", (dialog, which) -> activity.finish());
-        } else {
-            builder.setNegativeButton("稍后", null);
+        final Dialog dialog = new Dialog(activity, android.R.style.Theme_Translucent_NoTitleBar);
+        dialog.setContentView(R.layout.dialog_update);
+        dialog.setCancelable(false);
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.setOnKeyListener((d, keyCode, event) ->
+                keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN);
+
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.dimAmount = 0.62f;
+            params.gravity = android.view.Gravity.CENTER;
+            window.setAttributes(params);
         }
-        builder.show();
+
+        TextView exit = dialog.findViewById(R.id.updateExit);
+        exit.setOnClickListener(v -> {
+            dialog.dismiss();
+            activity.finish();
+        });
+        TextView now = dialog.findViewById(R.id.updateNow);
+        now.setOnClickListener(v -> {
+            dialog.dismiss();
+            downloadAndInstall(activity, info);
+        });
+
+        dialog.show();
+        if (window != null) {
+            int width = (int) (activity.getResources().getDisplayMetrics().widthPixels * 0.88f);
+            window.setLayout(width, WindowManager.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private static void downloadAndInstall(Activity activity, UpdateInfo info) {
