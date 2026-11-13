@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AURORA · 界面设计预览</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  :root {
+    --mint: #5BF0D0;
+    --mint-soft: #A9F7E7;
+    --violet: #8B7BFF;
+    --pink: #FF7AC6;
+    --sky: #59C2FF;
+    --amber: #FFC46B;
+    --text: #F6F8FF;
+    --secondary: #9AA5C3;
+    --tertiary: #68738F;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 390px;
+    min-height: 1100px;
+    background: #05070F;
+    color: var(--text);
+    font-family: "Microsoft YaHei", "PingFang SC", Inter, sans-serif;
+    overflow: hidden;
+    position: relative;
+  }
+  .bg { position: absolute; inset: 0; overflow: hidden; }
+  .bg::before {
+    content: ""; position: absolute; width: 600px; height: 600px; left: -180px; top: -220px;
+    background: radial-gradient(circle, rgba(91,240,208,.32) 0, rgba(91,240,208,0) 64%);
+    filter: blur(20px);
+  }
+  .bg::after {
+    content: ""; position: absolute; width: 620px; height: 620px; right: -220px; top: 150px;
+    background: radial-gradient(circle, rgba(139,123,255,.32) 0, rgba(139,123,255,0) 66%);
+    filter: blur(24px);
+  }
+  .blob3 {
+    position: absolute; width: 600px; height: 600px; left: 30px; bottom: -280px;
+    background: radial-gradient(circle, rgba(255,122,198,.20) 0, rgba(255,122,198,0) 66%);
+    filter: blur(26px);
+  }
+  .stars {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 32px 92px, rgba(255,255,255,.55), transparent),
+      radial-gradient(1.2px 1.2px at 330px 70px, rgba(255,255,255,.45), transparent),
+      radial-gradient(1px 1px at 356px 220px, rgba(255,255,255,.35), transparent),
+      radial-gradient(1.4px 1.4px at 70px 310px, rgba(255,255,255,.30), transparent),
+      radial-gradient(1px 1px at 300px 410px, rgba(255,255,255,.28), transparent),
+      radial-gradient(1.2px 1.2px at 46px 620px, rgba(255,255,255,.25), transparent),
+      radial-gradient(1px 1px at 350px 700px, rgba(255,255,255,.25), transparent);
+    opacity: .8;
+  }
+  .content { position: relative; z-index: 2; padding: 18px 20px 26px; }
+
+  header { display: flex; align-items: flex-start; }
+  .brand { flex: 1; }
+  .brandline { display: flex; align-items: center; gap: 8px; }
+  .orb { width: 9px; height: 9px; border-radius: 50%; background: linear-gradient(135deg, var(--mint), var(--pink)); box-shadow: 0 0 10px rgba(91,240,208,.55); }
+  .brandname { font-size: 10px; font-weight: 600; letter-spacing: .30em; color: var(--mint); }
+  h1 {
+    margin: 6px 0 0;
+    font-size: 30px;
+    line-height: 1.18;
+    font-weight: 600;
+    letter-spacing: .02em;
+    background: linear-gradient(90deg, #F6F8FF 0%, #A9F7E7 40%, #C9BDFF 72%, #FFB7DC 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tagline { margin-top: 4px; font-size: 11px; color: var(--secondary); letter-spacing: .04em; }
+  .status {
+    margin-top: 2px;
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 12px;
+    border-radius: 100px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.14);
+    color: var(--secondary);
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .status .dot { width: 7px; height: 7px; border-radius: 50%; background: #5A6580; }
+
+  .card {
+    background: linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.038));
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 28px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.07);
+    backdrop-filter: blur(18px);
+  }
+  .hero { margin-top: 20px; padding: 18px; }
+  .hero-top { display: flex; justify-content: space-between; align-items: center; }
+  .eyebrow { font-size: 9px; letter-spacing: .20em; color: var(--tertiary); font-weight: 600; }
+  .light-name { margin-top: 3px; font-size: 14px; color: var(--text); }
+  .ble-chip { padding: 4px 8px; border-radius: 8px; background: rgba(255,255,255,.09); border: 1px solid rgba(255,255,255,.08); font-size: 9px; letter-spacing: .08em; color: var(--secondary); }
+
+  .power { width: 176px; height: 176px; margin: 4px auto 0; position: relative; display: grid; place-items: center; }
+  .power .glow { position: absolute; inset: 2px; border-radius: 50%; background: radial-gradient(circle, rgba(91,240,208,.22) 0, rgba(91,240,208,.05) 58%, transparent 72%); filter: blur(6px); }
+  .power .ring { position: absolute; inset: 8px; border-radius: 50%; background: conic-gradient(from 120deg, var(--mint), var(--violet) 34%, var(--pink) 68%, var(--mint) 100%); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px)); mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px)); filter: drop-shadow(0 0 14px rgba(139,123,255,.35)); }
+  .power .track { position: absolute; inset: 8px; border-radius: 50%; border: 1px solid rgba(255,255,255,.10); }
+  .power .disc { position: relative; width: 116px; height: 116px; border-radius: 50%; border: 1px solid rgba(255,255,255,.13); background: radial-gradient(circle at 36% 28%, rgba(255,255,255,.20), rgba(255,255,255,.06) 58%, rgba(255,255,255,.025)); display: grid; place-items: center; box-shadow: inset 0 0 30px rgba(91,240,208,.06), 0 0 30px rgba(91,240,208,.10); }
+  .power svg { width: 62px; height: 62px; color: #fff; filter: drop-shadow(0 0 10px rgba(91,240,208,.35)); }
+  .power-label { text-align: center; font-size: 12px; margin-top: 1px; color: var(--text); }
+
+  .brightness { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 0 2px; }
+  .brightness svg { width: 17px; height: 17px; color: var(--tertiary); flex: 0 0 auto; }
+  .trackbar { flex: 1; height: 6px; border-radius: 4px; background: rgba(255,255,255,.13); position: relative; }
+  .trackbar::before { content: ""; position: absolute; inset: 0 28% 0 0; border-radius: 4px; background: linear-gradient(90deg, var(--mint), var(--violet), var(--pink)); }
+  .trackbar .thumb { position: absolute; left: 70%; top: 50%; width: 24px; height: 24px; transform: translate(-50%, -50%); border-radius: 50%; background: #fff; box-shadow: 0 0 0 5px rgba(91,240,208,.22), 0 4px 12px rgba(0,0,0,.35); }
+  .pct { width: 42px; text-align: right; font-size: 12px; color: var(--mint-soft); font-weight: 600; }
+
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-top: 24px; }
+  .section-head h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: .01em; }
+  .section-head span { font-size: 10px; color: var(--tertiary); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .mode {
+    height: 88px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,.11);
+    background: rgba(255,255,255,.055);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px;
+  }
+  .mode.active {
+    border-color: rgba(91,240,208,.55);
+    background: linear-gradient(135deg, rgba(91,240,208,.18), rgba(139,123,255,.10));
+    box-shadow: 0 0 24px rgba(91,240,208,.10), inset 0 0 24px rgba(91,240,208,.04);
+  }
+  .mode .ico { width: 34px; height: 34px; border-radius: 12px; background: rgba(255,255,255,.07); display: grid; place-items: center; color: #8A95B3; }
+  .mode.active .ico { background: rgba(91,240,208,.20); color: var(--mint); }
+  .mode .ico svg { width: 18px; height: 18px; }
+  .mode b { font-size: 12.5px; font-weight: 500; color: #C3CBE0; }
+  .mode.active b { color: #fff; }
+  .mode small { font-size: 9.5px; color: var(--tertiary); }
+  .mode.active small { color: var(--mint-soft); }
+
+  .speed { margin-top: 2px; border-radius: 28px; padding: 9px 10px 9px 14px; display: flex; align-items: center; gap: 6px; }
+  .speed .label { flex: 1; font-size: 11px; color: var(--secondary); }
+  .chip { padding: 5px 12px; border-radius: 9px; font-size: 10px; color: var(--secondary); background: rgba(255,255,255,.04); border: 1px solid transparent; }
+  .chip.active { color: var(--mint-soft); background: rgba(91,240,208,.18); border-color: rgba(91,240,208,.40); }
+
+  .color-card { margin-top: 10px; border-radius: 28px; padding: 10px; display: flex; justify-content: space-between; }
+  .dotcolor { flex: 1; height: 46px; display: grid; place-items: center; position: relative; }
+  .dotcolor i { width: 28px; height: 28px; border-radius: 50%; display: block; box-shadow: inset 0 1px 2px rgba(255,255,255,.35); }
+  .dotcolor.active i { box-shadow: 0 0 0 2px #fff, 0 0 16px rgba(91,240,208,.45); }
+  .hex { font-family: Consolas, monospace; font-size: 10px; color: var(--mint-soft); }
+
+  .connect {
+    margin-top: 22px; height: 56px; border-radius: 20px;
+    background: linear-gradient(90deg, var(--mint), var(--violet), var(--pink));
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    color: #061019; font-size: 15px; font-weight: 600;
+    box-shadow: 0 12px 30px rgba(139,123,255,.20);
+  }
+  .connect svg { width: 20px; height: 20px; }
+  .demo-hint { margin-top: 10px; text-align: center; font-size: 11px; color: var(--secondary); }
+  .privacy { margin-top: 10px; text-align: center; font-size: 9px; color: var(--tertiary); }
+</style>
+</head>
+<body>
+<div class="bg"><div class="blob3"></div></div>
+<div class="stars"></div>
+<div class="content">
+  <header>
+    <div class="brand">
+      <div class="brandline"><span class="orb"></span><span class="brandname">AURORA</span></div>
+      <h1>幻彩灯控</h1>
+      <div class="tagline">让每一束光，都听你的</div>
+    </div>
+    <div class="status"><span class="dot"></span><span>未连接</span></div>
+  </header>
+
+  <section class="card hero">
+    <div class="hero-top">
+      <div>
+        <div class="eyebrow">MAIN LIGHT</div>
+        <div class="light-name">我的幻彩灯带</div>
+      </div>
+      <div class="ble-chip">BLE 5.0</div>
+    </div>
+
+    <div class="power">
+      <div class="glow"></div>
+      <div class="track"></div>
+      <div class="ring"></div>
+      <div class="disc">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <path d="M12 2v9" />
+          <path d="M6.2 5.2a8 8 0 1 0 11.6 0" />
+        </svg>
+      </div>
+    </div>
+    <div class="power-label">灯光已开启</div>
+
+    <div class="brightness">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm-1 14.45h2V19h-2v2.45ZM2 11h3v2H2v-2Zm17 0h3v2h-3v-2ZM4.2 5.6l1.4-1.4 2.1 2.1-1.4 1.4-2.1-2.1Zm12.1 12.1 1.4-1.4 2.1 2.1-1.4 1.4-2.1-2.1Zm2.1-13.5 1.4 1.4-2.1 2.1-1.4-1.4 2.1-2.1ZM5.6 19.8l-1.4-1.4 2.1-2.1 1.4 1.4-2.1 2.1Z"/></svg>
+      <div class="trackbar"><span class="thumb"></span></div>
+      <div class="pct">72%</div>
+    </div>
+  </section>
+
+  <div class="section-head"><h2>光效模式</h2><span>4 种氛围</span></div>
+  <div class="grid">
+    <div class="mode active">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9l1.25-2.75L23 5l-2.75-1.25L19 1l-1.25 2.75L15 5l2.75 1.25L19 9zm-7.5.5L9 4 6.5 9.5 1 12l5.5 2.5L9 20l2.5-5.5L17 12l-5.5-2.5zM19 15l-1.25 2.75L15 19l2.75 1.25L19 23l1.25-2.75L23 19l-2.75-1.25L19 15z"/></svg></div>
+      <b>幻彩流光</b><small>色彩流动</small>
+    </div>
+    <div class="mode">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3a9 9 0 1 0 9 9c0-.83-.11-1.64-.32-2.4A7 7 0 0 1 12 3z"/></svg></div>
+      <b>呼吸</b><small>轻柔明暗</small>
+    </div>
+    <div class="mode">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 18h2V6H7v12zm4 4h2V2h-2v20zM3 14h2v-4H3v4zm12 4h2V6h-2v12zm4-8v4h2v-4h-2z"/></svg></div>
+      <b>音乐律动</b><small>跟随节拍</small>
+    </div>
+    <div class="mode">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5.7s.7 2.6.7 4.8c0 2-1.3 3.7-3.4 3.7-2 0-3.6-1.7-3.6-3.7l.1-.4C5.2 7.5 4 10.6 4 14c0 4.4 3.6 8 8 8s8-3.6 8-8C20 8.6 17.4 3.8 13.5.7zM11.7 19c-1.8 0-3.2-1.4-3.2-3.1 0-1.6 1.1-2.8 2.8-3.1 1.8-.4 3.6-1.2 4.6-2.6.4 1.3.6 2.6.6 4 0 2.7-2.2 4.8-4.8 4.8z"/></svg></div>
+      <b>烛光</b><small>暖光摇曳</small>
+    </div>
+  </div>
+
+  <div class="card speed">
+    <span class="label">律动速度</span>
+    <span class="chip">慢</span>
+    <span class="chip active">标准</span>
+    <span class="chip">快</span>
+  </div>
+
+  <div class="section-head"><h2>灯光颜色</h2><span class="hex">#5BF0D0</span></div>
+  <div class="card color-card">
+    <span class="dotcolor active"><i style="background:#5BF0D0"></i></span>
+    <span class="dotcolor"><i style="background:#59C2FF"></i></span>
+    <span class="dotcolor"><i style="background:#8B7BFF"></i></span>
+    <span class="dotcolor"><i style="background:#FF7AC6"></i></span>
+    <span class="dotcolor"><i style="background:#FFC46B"></i></span>
+    <span class="dotcolor"><i style="background:#F1F4FF"></i></span>
+  </div>
+
+  <div class="connect">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29ZM13 5.83l1.88 1.88L13 9.59V5.83Zm1.88 10.46L13 18.17v-3.76l1.88 1.88Z"/></svg>
+    <span>连接灯光</span>
+  </div>
+  <div class="demo-hint">没有设备？点此体验演示模式</div>
+  <div class="privacy">无需注册 · 无需联网 · 设置仅保存在本机</div>
+</div>
+</body>
+</html>

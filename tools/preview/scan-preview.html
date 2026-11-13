@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>AURORA · 连接面板预览</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    width: 390px; height: 844px; overflow: hidden;
+    background: #05070F; color: #F6F8FF;
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    position: relative;
+  }
+  .bg { position: absolute; inset: 0; }
+  .bg::before {
+    content: ""; position: absolute; width: 620px; height: 620px; left: -200px; top: -180px;
+    background: radial-gradient(circle, rgba(91,240,208,.28), transparent 65%);
+  }
+  .bg::after {
+    content: ""; position: absolute; width: 620px; height: 620px; right: -220px; top: 80px;
+    background: radial-gradient(circle, rgba(139,123,255,.30), transparent 65%);
+  }
+  .stars {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 40px 90px, rgba(255,255,255,.5), transparent),
+      radial-gradient(1.2px 1.2px at 330px 180px, rgba(255,255,255,.4), transparent),
+      radial-gradient(1px 1px at 80px 300px, rgba(255,255,255,.3), transparent);
+  }
+  .under { position: absolute; inset: 0; padding: 18px 20px; opacity: .45; filter: blur(.3px); }
+  .under .brand { font-size: 10px; letter-spacing: .3em; color: #5BF0D0; }
+  .under h1 { margin: 7px 0 0; font-size: 30px; color: #F6F8FF; }
+  .under .card { margin-top: 20px; height: 310px; border-radius: 28px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); }
+  .dim { position: absolute; inset: 0; background: rgba(2,4,10,.58); }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 675px;
+    background: linear-gradient(180deg, #151D33 0%, #080C17 100%);
+    border-radius: 30px 30px 0 0;
+    border-top: 1px solid rgba(255,255,255,.12);
+    padding: 10px 20px 18px;
+    box-shadow: 0 -20px 60px rgba(0,0,0,.4);
+  }
+  .handle { width: 36px; height: 4px; border-radius: 100px; background: rgba(255,255,255,.2); margin: 0 auto; }
+  .head { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+  .head .text { flex: 1; }
+  .head h2 { margin: 0; font-size: 21px; font-weight: 600; }
+  .head p { margin: 4px 0 0; font-size: 11px; color: #9AA5C3; }
+  .close { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.08); display: grid; place-items: center; color: #9AA5C3; }
+  .close svg { width: 17px; height: 17px; }
+  .scanrow { display: flex; align-items: center; gap: 8px; margin-top: 14px; padding: 0 2px; }
+  .spinner { width: 15px; height: 15px; border-radius: 50%; border: 2px solid rgba(91,240,208,.22); border-top-color: #5BF0D0; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .scanrow span { font-size: 10px; color: #9AA5C3; }
+  .devices { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .device {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 9px 11px 12px; border-radius: 18px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.11);
+  }
+  .device .ico { width: 40px; height: 40px; border-radius: 50%; background: rgba(91,240,208,.12); display: grid; place-items: center; color: #5BF0D0; flex: 0 0 auto; }
+  .device .ico svg { width: 19px; height: 19px; }
+  .device .meta { flex: 1; min-width: 0; }
+  .device .name { font-size: 13.5px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .tag { font-size: 8px; color: #A9F7E7; background: rgba(91,240,208,.18); border-radius: 6px; padding: 2px 6px; font-weight: 400; }
+  .device .addr { font-size: 9px; color: #68738F; margin-top: 3px; }
+  .device .chev { color: #68738F; width: 18px; height: 18px; flex: 0 0 auto; }
+  .device.other { opacity: .78; }
+  .footer { position: absolute; left: 20px; right: 20px; bottom: 16px; }
+  .buttons { display: flex; gap: 10px; }
+  .btn { flex: 1; height: 47px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .btn.secondary { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: #9AA5C3; }
+  .btn.demo { background: rgba(255,255,255,.04); color: #F6F8FF; }
+  .note { margin-top: 10px; text-align: center; font-size: 9px; color: #68738F; }
+</style>
+</head>
+<body>
+<div class="bg"></div><div class="stars"></div>
+<div class="under">
+  <div class="brand">AURORA</div>
+  <h1>幻彩灯控</h1>
+  <div class="card"></div>
+</div>
+<div class="dim"></div>
+
+<div class="sheet">
+  <div class="handle"></div>
+  <div class="head">
+    <div class="text">
+      <h2>连接灯光</h2>
+      <p>请确保灯带已通电，并靠近手机</p>
+    </div>
+    <div class="close"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg></div>
+  </div>
+
+  <div class="scanrow"><span class="spinner"></span><span>正在扫描 · 已发现 3 台</span></div>
+
+  <div class="devices">
+    <div class="device">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29ZM13 5.83l1.88 1.88L13 9.59V5.83Zm1.88 10.46L13 18.17v-3.76l1.88 1.88Z"/></svg></div>
+      <div class="meta">
+        <div class="name">AuroraLight-3F7A <span class="tag">幻彩灯</span></div>
+        <div class="addr">C4:7F:51:3F:7A:1D · 信号强</div>
+      </div>
+      <div class="chev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m8.59 16.59 4.58-4.59-4.58-4.59L10 6l6 6-6 6-1.41-1.41Z"/></svg></div>
+    </div>
+
+    <div class="device">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29ZM13 5.83l1.88 1.88L13 9.59V5.83Zm1.88 10.46L13 18.17v-3.76l1.88 1.88Z"/></svg></div>
+      <div class="meta">
+        <div class="name">AuroraLight-9C21 <span class="tag">幻彩灯</span></div>
+        <div class="addr">C4:7F:51:9C:21:08 · 信号良好</div>
+      </div>
+      <div class="chev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m8.59 16.59 4.58-4.59-4.58-4.59L10 6l6 6-6 6-1.41-1.41Z"/></svg></div>
+    </div>
+
+    <div class="device other">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.71 7.71 12 2h-1v7.59L6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 11 14.41V22h1l5.71-5.71-4.3-4.29 4.3-4.29ZM13 5.83l1.88 1.88L13 9.59V5.83Zm1.88 10.46L13 18.17v-3.76l1.88 1.88Z"/></svg></div>
+      <div class="meta">
+        <div class="name">Mi Band 7</div>
+        <div class="addr">D8:31:34:6A:11:02 · 信号较弱</div>
+      </div>
+      <div class="chev"><svg viewBox="0 0 24 24" fill="currentColor"><path d="m8.59 16.59 4.58-4.59-4.58-4.59L10 6l6 6-6 6-1.41-1.41Z"/></svg></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="buttons"><div class="btn secondary">重新扫描</div><div class="btn demo">演示模式</div></div>
+    <div class="note">仅使用蓝牙 · 不收集任何个人信息</div>
+  </div>
+</div>
+</body>
+</html>

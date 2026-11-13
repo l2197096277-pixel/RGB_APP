@@ -1,0 +1,100 @@
+name: Release AuroraLight
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Prepare signing
+        run: |
+          mkdir -p keystore
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore/aurora-release.jks
+          cat > keystore.properties <<EOF
+          storeFile=keystore/aurora-release.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+          chmod +x gradlew
+
+      - name: Build release
+        run: |
+          set -euo pipefail
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          UPDATE_URL="https://${GITHUB_REPOSITORY_OWNER}.github.io/${REPO_NAME}/update.json"
+          ./gradlew assembleRelease --no-daemon -PAURORA_UPDATE_URL="$UPDATE_URL"
+
+      - name: Read version
+        id: ver
+        run: |
+          set -euo pipefail
+          VERSION_NAME=$(grep -m1 "versionName" app/build.gradle | sed -E "s/.*versionName '([^']+)'.*/\1/")
+          VERSION_CODE=$(grep -m1 "versionCode" app/build.gradle | sed -E "s/.*versionCode ([0-9]+).*/\1/")
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          cp app/build/outputs/apk/release/app-release.apk "AuroraLight-v${VERSION_NAME}.apk"
+          echo "sha256=$(sha256sum "AuroraLight-v${VERSION_NAME}.apk" | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog
+        run: |
+          awk '/^## v/{if(found) exit; found=1} found' CHANGELOG.md > changelog.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version_name }}
+          name: AuroraLight v${{ steps.ver.outputs.version_name }}
+          body_path: changelog.txt
+          files: AuroraLight-v${{ steps.ver.outputs.version_name }}.apk
+
+      - name: Build update.json for GitHub Pages
+        run: |
+          set -euo pipefail
+          mkdir -p pages
+          APK_URL="https://github.com/${{ github.repository }}/releases/download/v${{ steps.ver.outputs.version_name }}/AuroraLight-v${{ steps.ver.outputs.version_name }}.apk"
+          VERSION_CODE="${{ steps.ver.outputs.version_code }}" \
+          VERSION_NAME="${{ steps.ver.outputs.version_name }}" \
+          APK_URL="$APK_URL" \
+          SHA256="${{ steps.ver.outputs.sha256 }}" \
+          python3 - <<'PY' > pages/update.json
+          import json, os
+          changelog = open('changelog.txt', encoding='utf-8').read().strip()
+          lines = [line for line in changelog.splitlines() if not line.startswith('## ')]
+          while lines and not lines[0].strip():
+              lines.pop(0)
+          print(json.dumps({
+              "versionCode": int(os.environ["VERSION_CODE"]),
+              "versionName": os.environ["VERSION_NAME"],
+              "apkUrl": os.environ["APK_URL"],
+              "sha256": os.environ["SHA256"],
+              "changelog": "\n".join(lines),
+              "force": False
+          }, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Publish update.json to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./pages
+          publish_branch: gh-pages
+          keep_files: true

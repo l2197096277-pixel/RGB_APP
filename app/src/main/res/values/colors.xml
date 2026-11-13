@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_deep">#05070F</color>
+    <color name="bg_mid">#0A0E1C</color>
+    <color name="bg_sheet">#0B1020</color>
+
+    <color name="text_primary">#F6F8FF</color>
+    <color name="text_secondary">#9AA5C3</color>
+    <color name="text_tertiary">#68738F</color>
+
+    <color name="mint">#5BF0D0</color>
+    <color name="mint_soft">#A9F7E7</color>
+    <color name="violet">#8B7BFF</color>
+    <color name="pink">#FF7AC6</color>
+    <color name="sky">#59C2FF</color>
+    <color name="amber">#FFC46B</color>
+    <color name="coral">#FF7A7A</color>
+    <color name="white_soft">#F1F4FF</color>
+
+    <color name="glass_fill">#14FFFFFF</color>
+    <color name="glass_stroke">#22FFFFFF</color>
+    <color name="icon_muted">#8A95B3</color>
+    <color name="danger">#FF7A7A</color>
+    <color name="success">#5BF0D0</color>
+</resources>
