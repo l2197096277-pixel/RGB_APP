@@ -1,8 +1,8 @@
 {
-  "versionCode": 10,
-  "versionName": "1.0.9",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.0.9/AuroraLight-v1.0.9.apk",
-  "sha256": "871799e00a35a8f36ada1972ce6be8b90a6896975807676fbc425853de176b87",
-  "changelog": "### 新增\n\n- GitHub Releases + Pages 自动更新：启动检查、弹窗、下载、SHA-256 校验、系统安装。\n- 记住上次连接的灯带地址，下次启动自动连接。\n- 新增 `.github/workflows/release.yml` 一键发布流程。\n- 新增 INTERNET / REQUEST_INSTALL_PACKAGES / FileProvider。\n\n详细说明：[v1.0.9.md](docs/changelogs/v1.0.9.md)\n\n---",
+  "versionCode": 11,
+  "versionName": "1.1.0",
+  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.0/AuroraLight-v1.1.0.apk",
+  "sha256": "25477a7b20056e0dadbfd13917867871da2aa286384b6fd11f1cb78fa803113a",
+  "changelog": "### 新增\n\n- 亮灯数量中间新增可点击输入框，可直接输入 0–255。\n- 新增直接设置数量命令：`11 09 01 x CS`。\n- `−`/`+` 逐颗调节保留。\n\n详细说明：[v1.1.0.md](docs/changelogs/v1.1.0.md)\n\n---",
   "force": false
 }
