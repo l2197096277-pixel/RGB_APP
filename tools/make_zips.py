@@ -14,7 +14,7 @@ def add_file(zf, full, arc):
 
 
 def build_source():
-    out = os.path.join(DIST, "AuroraLight-v1.0.9-source.zip")
+    out = os.path.join(DIST, "AuroraLight-v1.1.0-source.zip")
     if os.path.exists(out):
         os.remove(out)
     skip_dirs = {"build", "dist", ".buildtools", "__pycache__", ".gradle", ".idea"}
@@ -33,7 +33,7 @@ def build_source():
 
 
 def build_docs():
-    out = os.path.join(DIST, "AuroraLight-v1.0.9-docs.zip")
+    out = os.path.join(DIST, "AuroraLight-v1.1.0-docs.zip")
     if os.path.exists(out):
         os.remove(out)
     with zipfile.ZipFile(out, "w") as zf:

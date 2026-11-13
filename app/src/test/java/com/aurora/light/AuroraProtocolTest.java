@@ -59,6 +59,10 @@ public class AuroraProtocolTest {
                 AuroraProtocol.bytesToHex(AuroraProtocol.ledCountStep(true)));
         assertEquals("11 07 01 00 19",
                 AuroraProtocol.bytesToHex(AuroraProtocol.ledCountStep(false)));
+        assertEquals("11 09 01 3C 57",
+                AuroraProtocol.bytesToHex(AuroraProtocol.ledCountSet(60)));
+        assertEquals("11 09 01 FF 1A",
+                AuroraProtocol.bytesToHex(AuroraProtocol.ledCountSet(255)));
         assertEquals("11 12 02 03 01 29",
                 AuroraProtocol.bytesToHex(AuroraProtocol.customLed(3, true)));
         assertEquals("11 12 02 03 00 28",

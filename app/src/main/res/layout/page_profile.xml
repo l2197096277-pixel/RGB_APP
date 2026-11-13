@@ -55,7 +55,7 @@
                 android:layout_marginTop="5dp"
                 android:fontFamily="sans-serif-medium"
                 android:longClickable="true"
-                android:text="v1.0.9"
+                android:text="v1.1.0"
                 android:textColor="@color/mint_soft"
                 android:textSize="26sp" />
 
@@ -90,7 +90,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:lineSpacingExtra="4dp"
-                android:text="v1.0.9\n· 新增 GitHub 自动更新：启动检查、弹窗、下载、安装。\n· 记住上次连接的灯带，下次启动自动连接。\n· 连接后默认关灯，需要自己按总开关。\n· 保留自检、自定义单灯、彩色灯珠、3×100ms。"
+                android:text="v1.1.0\n· 亮灯数量中间新增可点击输入框。\n· 可直接输入 1–255 并发送 11 09 01 x。\n· +/− 仍可逐颗调节。\n· 版本规则改为 1.0.9 → 1.1.0。"
                 android:textColor="@color/text_secondary"
                 android:textSize="10sp" />
         </LinearLayout>

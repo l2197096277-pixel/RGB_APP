@@ -72,6 +72,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.animation.DecelerateInterpolator;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -140,7 +141,7 @@ ScanSheet.Host {
     private TextView oneKeyOff;
     private TextView effectHint;
     private TextView versionLabel;
-    private TextView ledCountLabel;
+    private EditText ledCountInput;
     private TextView ledCountMinus;
     private TextView ledCountPlus;
     private TextView selfTestButton;
@@ -326,7 +327,7 @@ ScanSheet.Host {
         this.oneKeyOff = (TextView)this.findViewById(R.id.oneKeyOff);
         this.effectHint = (TextView)this.findViewById(R.id.effectHint);
         this.versionLabel = (TextView)this.findViewById(R.id.versionLabel);
-        this.ledCountLabel = (TextView)this.findViewById(R.id.ledCountLabel);
+        this.ledCountInput = (EditText)this.findViewById(R.id.ledCountInput);
         this.ledCountMinus = (TextView)this.findViewById(R.id.ledCountMinus);
         this.ledCountPlus = (TextView)this.findViewById(R.id.ledCountPlus);
         this.selfTestButton = (TextView)this.findViewById(R.id.selfTestButton);
@@ -524,6 +525,20 @@ ScanSheet.Host {
         }
         this.ledCountMinus.setOnClickListener(v -> this.changeLedCount(-1));
         this.ledCountPlus.setOnClickListener(v -> this.changeLedCount(1));
+        this.ledCountInput.setOnClickListener(v -> this.ledCountInput.selectAll());
+        this.ledCountInput.setOnEditorActionListener((v, actionId, event) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                this.applyLedCountInput();
+                this.ledCountInput.clearFocus();
+                return true;
+            }
+            return false;
+        });
+        this.ledCountInput.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                this.applyLedCountInput();
+            }
+        });
         this.selfTestButton.setOnClickListener(v -> this.toggleSelfTest());
         this.customLedButton.setOnClickListener(v -> this.openCustomPanel());
         this.customGenerate.setOnClickListener(v -> this.generateCustomGrid());
@@ -625,6 +640,7 @@ ScanSheet.Host {
             return;
         }
         this.state.ledCount = next;
+        this.ledCountInput.clearFocus();
         this.updateLedCountLabel();
         if (this.demoMode) {
             this.toast("演示模式 · 亮灯数量 " + next);
@@ -638,7 +654,38 @@ ScanSheet.Host {
     }
 
     private void updateLedCountLabel() {
-        this.ledCountLabel.setText((CharSequence)String.format(Locale.CHINA, "%d / 255", this.state.ledCount));
+        if (this.ledCountInput != null && !this.ledCountInput.hasFocus()) {
+            this.ledCountInput.setText((CharSequence)String.valueOf(this.state.ledCount));
+        }
+    }
+
+    private void applyLedCountInput() {
+        if (this.ledCountInput == null) {
+            return;
+        }
+        String raw = this.ledCountInput.getText() == null
+                ? "" : this.ledCountInput.getText().toString().trim();
+        int value;
+        try {
+            value = Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            this.updateLedCountLabel();
+            return;
+        }
+        value = AuroraProtocol.clamp(value, 0, 255);
+        if (value == this.state.ledCount) {
+            this.updateLedCountLabel();
+            return;
+        }
+        if (!this.ensureControl("设置亮灯数量")) {
+            this.updateLedCountLabel();
+            return;
+        }
+        this.state.ledCount = value;
+        this.updateLedCountLabel();
+        this.saveState();
+        this.dispatch(AuroraProtocol.ledCountSet(value), "亮灯数量 " + value);
+        this.toast("亮灯数量已设置为 " + value);
     }
 
     private void toggleSelfTest() {
@@ -1052,6 +1099,8 @@ ScanSheet.Host {
         this.oneKeyOff.setAlpha(connected ? 1.0f : 0.45f);
         this.ledCountMinus.setAlpha(enabled ? 1.0f : 0.45f);
         this.ledCountPlus.setAlpha(enabled ? 1.0f : 0.45f);
+        this.ledCountInput.setAlpha(enabled ? 1.0f : 0.45f);
+        this.ledCountInput.setEnabled(enabled);
         this.updateLedCountLabel();
         this.selfTestButton.setSelected(this.selfTestOn && connected && on);
         this.selfTestButton.setAlpha(!connected ? 0.35f : (on ? 1.0f : 0.45f));

@@ -51,6 +51,7 @@ public final class AuroraProtocol {
     // App 补充的扩展命令（避开协议表已用命令）
     public static final int CMD_SPEED = 0x0A;        // 速度 0-100
     public static final int CMD_QUERY = 0x0B;        // 查询
+    public static final int CMD_COUNT_SET = 0x09;    // 直接设置亮灯数量
     public static final int CMD_SYNC = 0x0F;         // 全量同步
     public static final int LED_COUNT_MAX = 255;
 
@@ -101,6 +102,14 @@ public final class AuroraProtocol {
     /** 亮灯数量 +1 / -1（协议表 0x07，相对命令）。 */
     public static byte[] ledCountStep(boolean increase) {
         return frame(CMD_LED_COUNT_STEP, new byte[]{(byte) (increase ? 1 : 0)});
+    }
+
+    /**
+     * 直接设置亮灯数量：11 09 01 x CS。
+     * x = 0–255。
+     */
+    public static byte[] ledCountSet(int count) {
+        return frame(CMD_COUNT_SET, new byte[]{(byte) clamp(count, 0, LED_COUNT_MAX)});
     }
 
     /**
