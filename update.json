@@ -1,8 +1,8 @@
 {
-  "versionCode": 14,
-  "versionName": "1.1.3",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.3/AuroraLight-v1.1.3.apk",
-  "sha256": "716e50096287a61dc5bacbfccda6cc900b607ee6b4d67eeaee6316cca298009b",
-  "changelog": "### 优化\n\n- `fota.json` 新增 `force`，真实版本号与强制升级分离。\n- 升级成功后记录真实固件版本，不再保存 65535。\n- `fota.json` 请求禁用缓存，避免旧版本号导致 timeout。\n- 正常界面只显示当前版本日志，日期不显示具体时间。\n- 历史版本日志只在开发者模式显示。\n- 开发者模式下 OTA 页面显示 Log 按钮，可查看 TX/RX 和状态。\n\n详细说明：[v1.1.3.md](docs/changelogs/v1.1.3.md)\n\n---",
+  "versionCode": 15,
+  "versionName": "1.1.4",
+  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.4/AuroraLight-v1.1.4.apk",
+  "sha256": "82d21339f0e6232af39f7d0b8cfacade3e7062473d66a259699f757f3200436c",
+  "changelog": "### 优化\n\n- 扫描识别广播中的 FF01 / RGB 产品标记，显示“我的产品 · RGB灯”。\n- 修复检查更新返回后误弹“写入失败，请重试”。\n- 写忙时自动重试，不再立即提示。\n- 开发者模式长按版本号改为 10 秒。\n- 保留 OTA Log、force、真实版本号、日志折叠。\n\n详细说明：[v1.1.4.md](docs/changelogs/v1.1.4.md)\n\n---",
   "force": true
 }
