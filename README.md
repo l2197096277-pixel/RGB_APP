@@ -4,16 +4,17 @@
 
 源码是**原生 Java 8 + 标准 Gradle 工程**，可以直接用 Android Studio 打开、调试和修改。
 
-- **安装包**：[`dist/AuroraLight-v1.1.1.apk`](dist/AuroraLight-v1.1.1.apk)
-- **源码包**：[`dist/AuroraLight-v1.1.1-source.zip`](dist/AuroraLight-v1.1.1-source.zip)
+- **安装包**：[`dist/AuroraLight-v1.1.2.apk`](dist/AuroraLight-v1.1.2.apk)
+- **源码包**：[`dist/AuroraLight-v1.1.2-source.zip`](dist/AuroraLight-v1.1.2-source.zip)
 - **使用手册**：[`docs/使用手册.md`](docs/使用手册.md)
 - **BLE 协议规范**：[`docs/BLE协议规范.md`](docs/BLE协议规范.md)
 - **ESP32 固件烧录指南**：[`docs/固件烧录指南.md`](docs/固件烧录指南.md)
 - **开发与构建说明**：[`docs/开发与构建说明.md`](docs/开发与构建说明.md)
 - **测试与验证报告**：[`docs/测试与验证报告.md`](docs/测试与验证报告.md)
 - **自动更新说明**：[`docs/自动更新说明.md`](docs/自动更新说明.md)
+- **灯带固件 OTA 说明**：[`docs/灯带固件OTA升级说明.md`](docs/灯带固件OTA升级说明.md)
 - **更新日志**：[`CHANGELOG.md`](CHANGELOG.md)
-- **PDF 合集**：[`docs/AuroraLight-Manual-v1.1.1.pdf`](docs/AuroraLight-Manual-v1.1.1.pdf)
+- **PDF 合集**：[`docs/AuroraLight-Manual-v1.1.2.pdf`](docs/AuroraLight-Manual-v1.1.2.pdf)
 - **ESP32 参考固件**：[`firmware/aurora_light_esp32/aurora_light_esp32.ino`](firmware/aurora_light_esp32/aurora_light_esp32.ino)
 
 ![App icon](assets/icon-master.png)
@@ -34,6 +35,7 @@
 - 连接状态胶囊：未连接 / 连接中 / 已连接 / 演示模式
 - 记住上次连接的灯带地址，启动时自动连接
 - 启动检查 GitHub 更新，弹窗下载并拉起系统安装
+- 灯带固件 OTA：检查更新、红点、进度、成功/失败提示
 - 无硬件也可进入演示模式，完整体验 UI
 - **三页界面**：控制 / 光效 / 我的，支持左右滑动和底部切换
 - 未连接蓝牙时，所有控制按钮提示先连接；总开关未开启时提示先开灯
@@ -60,23 +62,24 @@
 
 ## 安装
 
-1. 把 `dist/AuroraLight-v1.1.1.apk` 发送到 Android 手机。
+1. 把 `dist/AuroraLight-v1.1.2.apk` 发送到 Android 手机。
 2. 点击安装，首次需允许“安装未知应用”。
 3. 打开 App，授予“附近的设备”权限（Android 11 及以下还需定位权限和定位开关）。
 4. 给灯带通电，点“连接灯光”，选择 `AuroraLight-XXXX`。
 
 ```bash
-adb install -r dist/AuroraLight-v1.1.1.apk
+adb install -r dist/AuroraLight-v1.1.2.apk
 ```
 
 ## 协议速览
 
 | 项 | 值 |
 |---|---|
-| Service | `0000BBB0-0000-1000-8000-00805F9B34FB`（16 位 `0xBBB0`） |
-| Control（手机→灯） | `0000BBB1-0000-1000-8000-00805F9B34FB`（16 位 `0xBBB1`，Write / Write NR） |
-| Status（灯→手机） | `0000BBB2-0000-1000-8000-00805F9B34FB`（16 位 `0xBBB2`，Notify） |
-| Info（可选） | `0000BBB3-0000-1000-8000-00805F9B34FB`（16 位 `0xBBB3`，Read） |
+| Service | `0000FF12-0000-1000-8000-00805F9B34FB`（16 位 `0xFF12`） |
+| Control（手机→灯） | `0000FF01-0000-1000-8000-00805F9B34FB`（16 位 `0xFF01`，Write No Response） |
+| Status（灯→手机） | `0000FF02-0000-1000-8000-00805F9B34FB`（16 位 `0xFF02`，Notify/Read） |
+| Info / 兼容写 | `0000FF03-0000-1000-8000-00805F9B34FB`（16 位 `0xFF03`，Write/Read） |
+| OTA | `0000FF14` Notify、`0000FF15` Write No Response |
 | 设备名 | `AuroraLight-XXXX` |
 | 帧 | `11 \| CMD \| LEN \| DATA \| CHECKSUM` |
 | 校验 | 前面所有字节累加，取低 8 位 |
@@ -88,9 +91,9 @@ adb install -r dist/AuroraLight-v1.1.1.apk
 
 App 使用**中科蓝讯 RGB 协议**。手机是主机，灯带是从机；灯带固件必须：
 
-1. 提供 `0xBBB0` 服务，以及 `0xBBB1` / `0xBBB2` 特征值；
+1. 提供 `0xFF12` 服务，以及 `0xFF01` / `0xFF02` / `0xFF03` 特征值；
 2. 按 `11 | CMD | LEN | DATA | CHECKSUM` 帧格式解析并执行命令；
-3. 广播 BBB0 不是连接前提，但建议广播，便于 App 识别和排序。
+3. 广播 FF12 不是连接前提，但建议广播，便于 App 识别和排序；旧固件 `BBB0` 仅用于扫描兼容识别。
 
 因此它**不会直接兼容**市面上 UUID 和指令都不同的商业灯带。若你的灯带是可编程控制器（ESP32 等），可烧录 [`firmware/aurora_light_esp32`](firmware/aurora_light_esp32/) 中的参考固件，或按协议适配现有固件。没有硬件时可用 App 内的演示模式。
 
@@ -195,5 +198,5 @@ aurora-light/
 
 ---
 
-版本 v1.1.1 · 2026-11 · Android 6.0+
+版本 v1.1.2 · 2026-11 · Android 6.0+
 

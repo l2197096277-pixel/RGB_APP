@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -26,6 +27,7 @@ import android.util.Log;
 import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
+import java.util.UUID;
 
 /**
  * BLE 主机（Central）实现：扫描、连接、发现服务、订阅 Notify、串行写指令。
@@ -67,6 +69,8 @@ public class AuroraBleManager {
     private BluetoothLeScanner scanner;
     private BluetoothGatt gatt;
     private BluetoothGattCharacteristic controlCharacteristic;
+    private BluetoothGattCharacteristic statusCharacteristic;
+    private boolean controlNoResponse;
 
     private boolean scanning;
     private boolean connecting;
@@ -358,7 +362,12 @@ public class AuroraBleManager {
         }
         writing = true;
         try {
-            controlCharacteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
+            boolean noResponse = controlNoResponse
+                    || (controlCharacteristic.getProperties()
+                    & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0;
+            controlCharacteristic.setWriteType(noResponse
+                    ? BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                    : BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
             controlCharacteristic.setValue(frame);
             boolean accepted = gatt.writeCharacteristic(controlCharacteristic);
             if (!accepted) {
@@ -371,7 +380,12 @@ public class AuroraBleManager {
                 return;
             }
             handler.removeCallbacks(writeTimeout);
-            handler.postDelayed(writeTimeout, WRITE_TIMEOUT_MS);
+            if (noResponse) {
+                // No Response 写不一定有 onCharacteristicWrite 回调，主动推进队列。
+                handler.postDelayed(this::completeWrite, 30L);
+            } else {
+                handler.postDelayed(writeTimeout, WRITE_TIMEOUT_MS);
+            }
             listener.onFrameSent(AuroraProtocol.bytesToHex(frame), frame[1] & 0xFF);
         } catch (SecurityException e) {
             writing = false;
@@ -380,6 +394,16 @@ public class AuroraBleManager {
             }
             postError("蓝牙权限已失效");
         }
+    }
+
+    private void completeWrite() {
+        if (!writing) {
+            return;
+        }
+        handler.removeCallbacks(writeTimeout);
+        writing = false;
+        pollWrite();
+        handler.postDelayed(this::drainWrites, 20L);
     }
 
     public void disconnect() {
@@ -415,6 +439,8 @@ public class AuroraBleManager {
             gatt = null;
         }
         controlCharacteristic = null;
+        statusCharacteristic = null;
+        controlNoResponse = false;
         ready = false;
     }
 
@@ -441,6 +467,25 @@ public class AuroraBleManager {
         everReady = true;
         post(() -> listener.onBleReady());
         post(this::drainWrites);
+    }
+
+    @SuppressLint("MissingPermission")
+    private void subscribeStatus(BluetoothGatt g) {
+        if (statusCharacteristic == null) {
+            return;
+        }
+        // FF02 是正常控制的状态通知。App 当前不解析它，但订阅后设备才可能回报状态。
+        try {
+            g.setCharacteristicNotification(statusCharacteristic, true);
+            BluetoothGattDescriptor descriptor =
+                    statusCharacteristic.getDescriptor(AuroraProtocol.CCCD_UUID);
+            if (descriptor != null) {
+                descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+                g.writeDescriptor(descriptor);
+            }
+        } catch (SecurityException e) {
+            Log.w(TAG, "subscribe FF02 status failed", e);
+        }
     }
 
     private void post(Runnable runnable) {
@@ -492,7 +537,9 @@ public class AuroraBleManager {
                     List<ParcelUuid> uuids = record.getServiceUuids();
                     if (uuids != null) {
                         for (ParcelUuid uuid : uuids) {
-                            if (AuroraProtocol.SERVICE_UUID.equals(uuid.getUuid())) {
+                            UUID serviceUuid = uuid.getUuid();
+                            if (AuroraProtocol.SERVICE_UUID.equals(serviceUuid)
+                                    || AuroraProtocol.LEGACY_SERVICE_UUID.equals(serviceUuid)) {
                                 advertises = true;
                                 break;
                             }
@@ -552,6 +599,8 @@ public class AuroraBleManager {
                 writing = false;
                 clearWrites();
                 controlCharacteristic = null;
+                statusCharacteristic = null;
+                controlNoResponse = false;
                 handler.removeCallbacks(writeTimeout);
                 if (wasReady) {
                     everReady = false;
@@ -586,15 +635,21 @@ public class AuroraBleManager {
             }
             BluetoothGattService service = g.getService(AuroraProtocol.SERVICE_UUID);
             if (service == null) {
-                fail("该设备不是幻彩灯：未找到自定义服务");
+                fail("该设备没有 FF12 服务：请确认固件已启用 FF12 控制/OTA");
                 return;
             }
             controlCharacteristic = service.getCharacteristic(AuroraProtocol.CONTROL_UUID);
             if (controlCharacteristic == null) {
-                fail("设备固件不完整：缺少 BBB1 控制特征值");
+                controlCharacteristic = service.getCharacteristic(AuroraProtocol.INFO_UUID);
+            }
+            if (controlCharacteristic == null) {
+                fail("设备固件不完整：缺少 FF01/FF03 控制特征值");
                 return;
             }
-            // App 只发码，不读状态，也不订阅 Notify/CCCD。
+            controlNoResponse = (controlCharacteristic.getProperties()
+                    & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0;
+            statusCharacteristic = service.getCharacteristic(AuroraProtocol.STATUS_UUID);
+            subscribeStatus(g);
             markReady();
         }
 
@@ -611,18 +666,16 @@ public class AuroraBleManager {
                 return;
             }
             if (characteristic == null
-                    || !AuroraProtocol.CONTROL_UUID.equals(characteristic.getUuid())) {
+                    || controlCharacteristic == null
+                    || !controlCharacteristic.getUuid().equals(characteristic.getUuid())) {
                 return;
             }
             final int writeStatus = status;
             post(() -> {
-                handler.removeCallbacks(writeTimeout);
-                writing = false;
-                pollWrite();
                 if (writeStatus != BluetoothGatt.GATT_SUCCESS) {
                     postError("指令写入失败（" + writeStatus + "）");
                 }
-                handler.postDelayed(AuroraBleManager.this::drainWrites, 25);
+                completeWrite();
             });
         }
     };

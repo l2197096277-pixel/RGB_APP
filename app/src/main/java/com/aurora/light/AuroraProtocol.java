@@ -14,18 +14,21 @@ import java.util.UUID;
  */
 public final class AuroraProtocol {
 
-    /** 中科蓝讯 16 位服务 UUID 0xBBB0 的标准基础 UUID。 */
+    /** 16 位服务 UUID 0xFF12：正常控制与 OTA 共用同一个服务。 */
     public static final UUID SERVICE_UUID =
-            UUID.fromString("0000BBB0-0000-1000-8000-00805F9B34FB");
-    /** 手机 -> 灯带：写入控制指令（0xBBB1）。 */
+            UUID.fromString("0000FF12-0000-1000-8000-00805F9B34FB");
+    /** 手机 -> 灯带：正常控制写入（0xFF01，Write No Response）。 */
     public static final UUID CONTROL_UUID =
-            UUID.fromString("0000BBB1-0000-1000-8000-00805F9B34FB");
-    /** 灯带 -> 手机：Notify 状态回报（0xBBB2）。 */
+            UUID.fromString("0000FF01-0000-1000-8000-00805F9B34FB");
+    /** 灯带 -> 手机：正常控制状态通知（0xFF02，Notify/Read）。 */
     public static final UUID STATUS_UUID =
-            UUID.fromString("0000BBB2-0000-1000-8000-00805F9B34FB");
-    /** 只读设备信息（0xBBB3），当前 App 不强制使用。 */
+            UUID.fromString("0000FF02-0000-1000-8000-00805F9B34FB");
+    /** 预留读写特征值（0xFF03），当前 App 不使用。 */
     public static final UUID INFO_UUID =
-            UUID.fromString("0000BBB3-0000-1000-8000-00805F9B34FB");
+            UUID.fromString("0000FF03-0000-1000-8000-00805F9B34FB");
+    /** 旧固件的服务，仅用于扫描时兼容识别，不再用于控制。 */
+    public static final UUID LEGACY_SERVICE_UUID =
+            UUID.fromString("0000BBB0-0000-1000-8000-00805F9B34FB");
     /** 标准 Client Characteristic Configuration Descriptor。 */
     public static final UUID CCCD_UUID =
             UUID.fromString("00002902-0000-1000-8000-00805F9B34FB");

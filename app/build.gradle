@@ -13,6 +13,7 @@ def storePasswordValue = keystoreProps.getProperty('storePassword', 'AuroraLight
 def keyAliasValue = keystoreProps.getProperty('keyAlias', 'aurora')
 def keyPasswordValue = keystoreProps.getProperty('keyPassword', storePasswordValue)
 def updateUrl = project.findProperty('AURORA_UPDATE_URL') ?: 'https://YOUR_GITHUB_USER.github.io/aurora-light/update.json'
+def fotaUrl = project.findProperty('AURORA_FOTA_URL') ?: 'https://YOUR_GITHUB_USER.github.io/aurora-light/fota.json'
 
 android {
     namespace 'com.aurora.light'
@@ -22,9 +23,10 @@ android {
         applicationId 'com.aurora.light'
         minSdk 23
         targetSdk 35
-        versionCode 12
-        versionName '1.1.1'
+        versionCode 13
+        versionName '1.1.2'
         buildConfigField 'String', 'UPDATE_URL', '"' + updateUrl + '"'
+        buildConfigField 'String', 'FOTA_URL', '"' + fotaUrl + '"'
     }
 
     signingConfigs {
@@ -64,6 +66,7 @@ android {
 }
 
 dependencies {
+    implementation project(':fota')
     implementation 'androidx.core:core:1.13.1'
     testImplementation 'junit:junit:4.13.2'
 }

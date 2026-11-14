@@ -141,6 +141,8 @@ ScanSheet.Host {
     private TextView oneKeyOff;
     private TextView effectHint;
     private TextView versionLabel;
+    private TextView currentFirmware;
+    private View firmwareDot;
     private LinearLayout changelogHistoryList;
     private TextView changelogToggle;
     private TextView changelogCurrentVersion;
@@ -213,6 +215,8 @@ ScanSheet.Host {
         this.buildColorDots();
         this.buildCustomColorDots();
         this.buildChangelogHistory();
+        this.updateFirmwareUi();
+        this.checkFirmwareAvailability();
         this.bindActions();
         this.ble = new AuroraBleManager((Context)this, this);
         this.scanSheet = new ScanSheet(this, this);
@@ -332,6 +336,8 @@ ScanSheet.Host {
         this.oneKeyOff = (TextView)this.findViewById(R.id.oneKeyOff);
         this.effectHint = (TextView)this.findViewById(R.id.effectHint);
         this.versionLabel = (TextView)this.findViewById(R.id.versionLabel);
+        this.currentFirmware = (TextView)this.findViewById(R.id.currentFirmware);
+        this.firmwareDot = this.findViewById(R.id.firmwareDot);
         this.changelogHistoryList = (LinearLayout)this.findViewById(R.id.changelogHistoryList);
         this.changelogToggle = (TextView)this.findViewById(R.id.changelogToggle);
         this.changelogCurrentVersion = (TextView)this.findViewById(R.id.changelogCurrentVersion);
@@ -563,6 +569,7 @@ ScanSheet.Host {
         });
         this.findViewById(R.id.changelogHeader).setOnClickListener(v -> this.toggleChangelog());
         this.changelogToggle.setOnClickListener(v -> this.toggleChangelog());
+        this.findViewById(R.id.checkFirmwareRow).setOnClickListener(v -> this.checkFirmwareUpdate());
         this.findViewById(R.id.devClear).setOnClickListener(v -> {
             this.devLines.clear();
             this.devLog.setText((CharSequence)"等待发送…");
@@ -855,6 +862,7 @@ ScanSheet.Host {
         this.changelogCurrentVersion.setText((CharSequence)("v" + BuildConfig.VERSION_NAME + " · 2026-11-14 01:30"));
         this.changelogHistoryList.removeAllViews();
         String[][] history = {
+                {"v1.1.1", "2026-11-14"},
                 {"v1.1.0", "2026-11-14"},
                 {"v1.0.9", "2026-11-13"},
                 {"v1.0.8", "2026-11-08"},
@@ -903,6 +911,64 @@ ScanSheet.Host {
         this.changelogExpanded = !this.changelogExpanded;
         this.changelogHistoryList.setVisibility(this.changelogExpanded ? 0 : 8);
         this.changelogToggle.setText((CharSequence)(this.changelogExpanded ? "收起历史" : "查看历史"));
+    }
+
+    private void checkFirmwareUpdate() {
+        if (this.ble == null || !this.ble.isReady() || this.linkState != LinkState.CONNECTED) {
+            this.toast("请先连接蓝牙，再检查灯带固件更新");
+            return;
+        }
+        String address = this.ble.currentAddress();
+        if (address == null || address.trim().isEmpty()) {
+            this.toast("没有读取到设备地址，请重新连接");
+            return;
+        }
+        this.autoConnectTried = false;
+        this.ble.disconnect();
+        this.setLinkState(LinkState.DISCONNECTED, null);
+        android.content.Intent intent = new android.content.Intent(this, FotaActivity.class);
+        intent.putExtra(FotaActivity.EXTRA_ADDRESS, address);
+        intent.putExtra(FotaActivity.EXTRA_NAME, this.ble.currentName());
+        this.startActivity(intent);
+    }
+
+    private void updateFirmwareUi() {
+        if (this.currentFirmware == null) {
+            return;
+        }
+        int version = this.prefs.getInt("last_fw_version", 0);
+        this.currentFirmware.setText((CharSequence)(version > 0
+                ? "当前固件：" + firmwareVersionText(version)
+                : "当前固件：未读取"));
+        this.firmwareDot.setVisibility(
+                this.prefs.getBoolean("fw_update_available", false) ? View.VISIBLE : View.GONE);
+    }
+
+    private void checkFirmwareAvailability() {
+        new Thread(() -> {
+            FotaManifest manifest = null;
+            try {
+                manifest = FotaManifest.fetch(BuildConfig.FOTA_URL);
+            } catch (Exception ignored) {
+            }
+            final FotaManifest result = manifest;
+            if (result == null) {
+                return;
+            }
+            this.runOnUiThread(() -> {
+                int known = this.prefs.getInt("last_fw_version", 0);
+                boolean available = known == 0 || result.versionCode > known;
+                this.prefs.edit().putBoolean("fw_update_available", available).apply();
+                this.updateFirmwareUi();
+            });
+        }, "aurora-fota-availability").start();
+    }
+
+    private static String firmwareVersionText(int version) {
+        return "v" + ((version >> 12) & 0x0F) + "."
+                + ((version >> 8) & 0x0F) + "."
+                + ((version >> 4) & 0x0F) + "."
+                + (version & 0x0F);
     }
 
     private void styleCustomLed(TextView button, int index, boolean on) {
@@ -1632,6 +1698,7 @@ ScanSheet.Host {
         }
         this.pager.postDelayed(this::tryAutoConnect, 500L);
         UpdateManager.retryPendingInstall(this);
+        this.updateFirmwareUi();
     }
 
     protected void onPause() {

@@ -13,7 +13,7 @@ with open(os.path.join(ROOT, "assets", "icon-master.png"), "rb") as f:
     icon_b64 = base64.b64encode(f.read()).decode("ascii")
 
 parts = []
-for name in ("使用手册.md", "BLE协议规范.md", "固件烧录指南.md", "自动更新说明.md", "开发与构建说明.md", "CHANGELOG.md"):
+for name in ("使用手册.md", "BLE协议规范.md", "灯带固件OTA升级说明.md", "固件烧录指南.md", "自动更新说明.md", "开发与构建说明.md", "CHANGELOG.md", "changelogs/README.md"):
     path = os.path.join(ROOT, name) if name == "CHANGELOG.md" else os.path.join(DOCS, name)
     with open(path, "r", encoding="utf-8") as f:
         text = f.read()
@@ -247,7 +247,7 @@ html = f"""<!DOCTYPE html>
     <div class="eyebrow">AURORA LIGHT · BLE CONTROLLER</div>
     <img src="data:image/png;base64,{icon_b64}" alt="Aurora Light">
     <h1>幻彩灯控<br>使用与协议文档</h1>
-    <div class="sub">无注册 · 无登录 · 仅联网检查更新<br>BLE 幻彩灯控制 App v1.1.1</div>
+    <div class="sub">无注册 · 无登录 · 仅联网检查更新<br>BLE 幻彩灯控制 App v1.1.2</div>
     <div class="meta">
       <span>Android 6.0+ · BLE 4.0+</span>
       <span>文档版本 1.0 · 2026-11</span>
