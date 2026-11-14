@@ -1,8 +1,8 @@
 {
-  "versionCode": 12,
-  "versionName": "1.1.1",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.1/AuroraLight-v1.1.1.apk",
-  "sha256": "968955eeedde3284f16305ee78906cde1713d04e97c36d6fba6e287331aace9e",
-  "changelog": "### 优化\n\n- 新版深色渐变更新弹窗，标题只显示“发现新版本”。\n- 更新内容只显示“修复了已知问题”。\n- 强制更新，只有“退出”和“更新”。\n- 点击外部/返回键不能关闭更新弹窗。\n- “我的”页更新日志默认只显示当前版本，点开查看历史。\n\n详细说明：[v1.1.1.md](docs/changelogs/v1.1.1.md)\n\n---",
+  "versionCode": 13,
+  "versionName": "1.1.2",
+  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.2/AuroraLight-v1.1.2.apk",
+  "sha256": "bc85469f1af1dc4771c61373f8d3cebc938ede6b02c471b5c70cda9822788974",
+  "changelog": "### 新增\n\n- “我的”页新增灯带固件 OTA 入口和版本显示。\n- 检查更新、红点提示、是/否确认、升级注意事项。\n- 下载 `.fot`、SHA-256 校验、FF12/FF14/FF15 BLE OTA。\n- 正常控制迁移到 FF12/FF01/FF02/FF03。\n- 进度条与百分比、成功/失败提示、升级期间屏蔽普通控制。\n\n详细说明：[v1.1.2.md](docs/changelogs/v1.1.2.md)\n\n---",
   "force": true
 }
