@@ -23,9 +23,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelUuid;
 import android.util.Log;
+import android.util.SparseArray;
 
 import java.util.ArrayDeque;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
 
@@ -77,6 +79,7 @@ public class AuroraBleManager {
     private volatile boolean ready;
     private boolean everReady;
     private volatile boolean writing;
+    private int writeRetries;
     private boolean manualDisconnect;
 
     private String currentName = "幻彩灯";
@@ -372,13 +375,20 @@ public class AuroraBleManager {
             boolean accepted = gatt.writeCharacteristic(controlCharacteristic);
             if (!accepted) {
                 writing = false;
+                if (writeRetries < 2) {
+                    writeRetries++;
+                    handler.postDelayed(this::drainWrites, 80L);
+                    return;
+                }
+                writeRetries = 0;
                 synchronized (pendingWrites) {
                     pendingWrites.poll();
                 }
                 postError("写入失败，请重试");
-                handler.postDelayed(this::drainWrites, 40);
+                handler.postDelayed(this::drainWrites, 80L);
                 return;
             }
+            writeRetries = 0;
             handler.removeCallbacks(writeTimeout);
             if (noResponse) {
                 // No Response 写不一定有 onCharacteristicWrite 回调，主动推进队列。
@@ -402,6 +412,7 @@ public class AuroraBleManager {
         }
         handler.removeCallbacks(writeTimeout);
         writing = false;
+        writeRetries = 0;
         pollWrite();
         handler.postDelayed(this::drainWrites, 20L);
     }
@@ -413,6 +424,7 @@ public class AuroraBleManager {
         connecting = false;
         everReady = false;
         writing = false;
+        writeRetries = 0;
         clearWrites();
         orderedBursts.clear();
         orderedSending = false;
@@ -451,6 +463,7 @@ public class AuroraBleManager {
         connecting = false;
         everReady = false;
         writing = false;
+        writeRetries = 0;
         clearWrites();
         orderedBursts.clear();
         orderedSending = false;
@@ -518,6 +531,20 @@ public class AuroraBleManager {
         post(() -> listener.onBleError(message));
     }
 
+    private static boolean containsFf01Marker(byte[] data) {
+        if (data == null) {
+            return false;
+        }
+        for (int i = 0; i + 1 < data.length; i++) {
+            int a = data[i] & 0xFF;
+            int b = data[i + 1] & 0xFF;
+            if ((a == 0xFF && b == 0x01) || (a == 0x01 && b == 0xFF)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private final ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
@@ -527,6 +554,7 @@ public class AuroraBleManager {
             BluetoothDevice device = result.getDevice();
             String name = null;
             boolean advertises = false;
+            boolean rgbProduct = false;
             try {
                 name = device.getName();
                 ScanRecord record = result.getScanRecord();
@@ -541,6 +569,32 @@ public class AuroraBleManager {
                             if (AuroraProtocol.SERVICE_UUID.equals(serviceUuid)
                                     || AuroraProtocol.LEGACY_SERVICE_UUID.equals(serviceUuid)) {
                                 advertises = true;
+                            }
+                            if (AuroraProtocol.CONTROL_UUID.equals(serviceUuid)
+                                    || AuroraProtocol.STATUS_UUID.equals(serviceUuid)
+                                    || AuroraProtocol.INFO_UUID.equals(serviceUuid)) {
+                                rgbProduct = true;
+                            }
+                        }
+                    }
+                    SparseArray<byte[]> manufacturer = record.getManufacturerSpecificData();
+                    if (manufacturer != null) {
+                        for (int i = 0; i < manufacturer.size(); i++) {
+                            if (containsFf01Marker(manufacturer.valueAt(i))) {
+                                rgbProduct = true;
+                                break;
+                            }
+                        }
+                    }
+                    Map<ParcelUuid, byte[]> serviceData = record.getServiceData();
+                    if (serviceData != null) {
+                        for (ParcelUuid uuid : serviceData.keySet()) {
+                            UUID dataUuid = uuid.getUuid();
+                            if (AuroraProtocol.CONTROL_UUID.equals(dataUuid)
+                                    || AuroraProtocol.STATUS_UUID.equals(dataUuid)
+                                    || AuroraProtocol.INFO_UUID.equals(dataUuid)
+                                    || AuroraProtocol.SERVICE_UUID.equals(dataUuid)) {
+                                rgbProduct = true;
                                 break;
                             }
                         }
@@ -550,7 +604,7 @@ public class AuroraBleManager {
                 Log.w(TAG, "read scan result", e);
             }
             BleDevice bleDevice = new BleDevice(device.getAddress(), name,
-                    result.getRssi(), advertises);
+                    result.getRssi(), advertises, rgbProduct);
             post(() -> listener.onScanResult(bleDevice));
         }
 
@@ -649,7 +703,8 @@ public class AuroraBleManager {
             controlNoResponse = (controlCharacteristic.getProperties()
                     & BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0;
             statusCharacteristic = service.getCharacteristic(AuroraProtocol.STATUS_UUID);
-            subscribeStatus(g);
+            // 普通控制只写 FF01；FF02 的 CCCD 写会占用 GATT 操作，
+            // 紧接同步指令时会导致 writeCharacteristic 返回 false（“写入失败”误报）。
             markReady();
         }
 

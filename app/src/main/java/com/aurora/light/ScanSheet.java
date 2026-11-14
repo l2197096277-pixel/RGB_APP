@@ -375,12 +375,14 @@ public class ScanSheet {
 
         if (device.looksLikeAurora()) {
             TextView tag = new TextView(activity);
-            tag.setText(R.string.recommended);
+            tag.setText(device.isRgbProduct()
+                    ? "我的产品 · RGB灯"
+                    : activity.getString(R.string.recommended));
             tag.setTextColor(activity.getColor(R.color.mint_soft));
             tag.setTextSize(TypedValue.COMPLEX_UNIT_SP, 8f);
             tag.setPadding(dp(6), dp(2), dp(6), dp(2));
             GradientDrawable tagBg = new GradientDrawable();
-            tagBg.setColor(0x2E5BF0D0);
+            tagBg.setColor(device.isRgbProduct() ? 0x3D5BF0D0 : 0x2E5BF0D0);
             tagBg.setCornerRadius(dp(6));
             tag.setBackground(tagBg);
             LinearLayout.LayoutParams tagParams = new LinearLayout.LayoutParams(
@@ -391,7 +393,8 @@ public class ScanSheet {
         middle.addView(nameRow);
 
         TextView address = new TextView(activity);
-        address.setText(device.address + "  ·  " + device.signalText());
+        address.setText(device.address + "  ·  " + device.signalText()
+                + (device.isRgbProduct() ? "  ·  已识别为 RGB 灯" : ""));
         address.setTextColor(activity.getColor(R.color.text_tertiary));
         address.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9f);
         address.setSingleLine(true);

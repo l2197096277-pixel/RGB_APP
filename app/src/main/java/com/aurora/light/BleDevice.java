@@ -6,12 +6,19 @@ public class BleDevice {
     public final String name;
     public final int rssi;
     public final boolean advertisesAuroraService;
+    public final boolean rgbProduct;
 
     public BleDevice(String address, String name, int rssi, boolean advertisesAuroraService) {
+        this(address, name, rssi, advertisesAuroraService, false);
+    }
+
+    public BleDevice(String address, String name, int rssi,
+                     boolean advertisesAuroraService, boolean rgbProduct) {
         this.address = address;
         this.name = name;
         this.rssi = rssi;
         this.advertisesAuroraService = advertisesAuroraService;
+        this.rgbProduct = rgbProduct;
     }
 
     public String displayName() {
@@ -22,8 +29,13 @@ public class BleDevice {
     }
 
     public boolean looksLikeAurora() {
-        return advertisesAuroraService
+        return rgbProduct
+                || advertisesAuroraService
                 || displayName().startsWith(AuroraProtocol.DEVICE_PREFIX);
+    }
+
+    public boolean isRgbProduct() {
+        return rgbProduct;
     }
 
     public String signalText() {

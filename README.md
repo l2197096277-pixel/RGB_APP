@@ -4,8 +4,8 @@
 
 源码是**原生 Java 8 + 标准 Gradle 工程**，可以直接用 Android Studio 打开、调试和修改。
 
-- **安装包**：[`dist/AuroraLight-v1.1.3.apk`](dist/AuroraLight-v1.1.3.apk)
-- **源码包**：[`dist/AuroraLight-v1.1.3-source.zip`](dist/AuroraLight-v1.1.3-source.zip)
+- **安装包**：[`dist/AuroraLight-v1.1.4.apk`](dist/AuroraLight-v1.1.4.apk)
+- **源码包**：[`dist/AuroraLight-v1.1.4-source.zip`](dist/AuroraLight-v1.1.4-source.zip)
 - **使用手册**：[`docs/使用手册.md`](docs/使用手册.md)
 - **BLE 协议规范**：[`docs/BLE协议规范.md`](docs/BLE协议规范.md)
 - **ESP32 固件烧录指南**：[`docs/固件烧录指南.md`](docs/固件烧录指南.md)
@@ -14,7 +14,7 @@
 - **自动更新说明**：[`docs/自动更新说明.md`](docs/自动更新说明.md)
 - **灯带固件 OTA 说明**：[`docs/灯带固件OTA升级说明.md`](docs/灯带固件OTA升级说明.md)
 - **更新日志**：[`CHANGELOG.md`](CHANGELOG.md)
-- **PDF 合集**：[`docs/AuroraLight-Manual-v1.1.3.pdf`](docs/AuroraLight-Manual-v1.1.3.pdf)
+- **PDF 合集**：[`docs/AuroraLight-Manual-v1.1.4.pdf`](docs/AuroraLight-Manual-v1.1.4.pdf)
 - **ESP32 参考固件**：[`firmware/aurora_light_esp32/aurora_light_esp32.ino`](firmware/aurora_light_esp32/aurora_light_esp32.ino)
 
 ![App icon](assets/icon-master.png)
@@ -62,13 +62,13 @@
 
 ## 安装
 
-1. 把 `dist/AuroraLight-v1.1.3.apk` 发送到 Android 手机。
+1. 把 `dist/AuroraLight-v1.1.4.apk` 发送到 Android 手机。
 2. 点击安装，首次需允许“安装未知应用”。
 3. 打开 App，授予“附近的设备”权限（Android 11 及以下还需定位权限和定位开关）。
 4. 给灯带通电，点“连接灯光”，选择 `AuroraLight-XXXX`。
 
 ```bash
-adb install -r dist/AuroraLight-v1.1.3.apk
+adb install -r dist/AuroraLight-v1.1.4.apk
 ```
 
 ## 协议速览
@@ -198,5 +198,5 @@ aurora-light/
 
 ---
 
-版本 v1.1.3 · 2026-11 · Android 6.0+
+版本 v1.1.4 · 2026-11 · Android 6.0+
 

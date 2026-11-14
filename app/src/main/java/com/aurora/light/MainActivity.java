@@ -64,9 +64,12 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 import android.util.SparseBooleanArray;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -176,6 +179,8 @@ ScanSheet.Host {
     private LinearLayout devPanel;
     private TextView devLog;
     private boolean developerMode;
+    private final Handler devLongPressHandler = new Handler(Looper.getMainLooper());
+    private boolean devLongPressTriggered;
     private final ArrayDeque<String> devLines = new ArrayDeque();
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.SSS", Locale.CHINA);
 
@@ -562,10 +567,26 @@ ScanSheet.Host {
         this.tabControl.setOnClickListener(v -> this.setPage(0));
         this.tabEffects.setOnClickListener(v -> this.setPage(1));
         this.tabProfile.setOnClickListener(v -> this.setPage(2));
-        this.versionLabel.setOnLongClickListener(v -> {
-            v.performHapticFeedback(0);
-            this.toggleDeveloperMode();
-            return true;
+        this.versionLabel.setLongClickable(false);
+        this.versionLabel.setOnTouchListener((v, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    this.devLongPressTriggered = false;
+                    this.devLongPressHandler.removeCallbacksAndMessages(null);
+                    this.devLongPressHandler.postDelayed(() -> {
+                        this.devLongPressTriggered = true;
+                        v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                        this.toggleDeveloperMode();
+                    }, 10_000L);
+                    break;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    this.devLongPressHandler.removeCallbacksAndMessages(null);
+                    break;
+                default:
+                    break;
+            }
+            return false;
         });
         this.findViewById(R.id.changelogHeader).setOnClickListener(v -> this.toggleChangelog());
         this.changelogToggle.setOnClickListener(v -> this.toggleChangelog());
@@ -1733,6 +1754,7 @@ ScanSheet.Host {
     }
 
     protected void onDestroy() {
+        this.devLongPressHandler.removeCallbacksAndMessages(null);
         if (this.scanSheet != null) {
             this.scanSheet.dismiss();
         }

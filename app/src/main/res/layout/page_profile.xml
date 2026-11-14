@@ -55,7 +55,7 @@
                 android:layout_marginTop="5dp"
                 android:fontFamily="sans-serif-medium"
                 android:longClickable="true"
-                android:text="v1.1.3"
+                android:text="v1.1.4"
                 android:textColor="@color/mint_soft"
                 android:textSize="26sp" />
 

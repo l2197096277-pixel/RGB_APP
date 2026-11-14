@@ -42,7 +42,7 @@ https://github.com/l2197096277-pixel/RGB_APP/releases
 新建 Release，例如：
 
 ```text
-Tag: fw-v1.2.3
+Tag: fir-v1.0.0
 Title: AuroraLight Firmware v1.2.3
 ```
 
@@ -55,7 +55,7 @@ aurora-light-v1.2.3.fot
 得到下载地址，例如：
 
 ```text
-https://github.com/l2197096277-pixel/RGB_APP/releases/download/fw-v1.2.3/aurora-light-v1.2.3.fot
+https://github.com/l2197096277-pixel/RGB_APP/releases/download/fir-v1.0.0/RGB-v1.0.0-20261115.fot
 ```
 
 > Release 必须是公开的，否则 App 无法下载。
@@ -80,11 +80,11 @@ Get-FileHash ".\aurora-light-v1.2.3.fot" -Algorithm SHA256
 
 ```json
 {
-  "versionCode": 4097,
-  "versionName": "1.0.1",
+  "versionCode": 4096,
+  "versionName": "1.0.0",
   "force": false,
-  "fileUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/fw-v1.0.1/aurora-light-v1.0.1.fot",
-  "sha256": "把上一步的SHA256填在这里",
+  "fileUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/fir-v1.0.0/RGB-v1.0.0-20261115.fot",
+  "sha256": "650850F47076CA376BD1135575B63B7E87BDBC63B0BF175DFE052DB991DD0A93",
   "size": 74752,
   "changelog": "修复了已知问题",
   "model": "aurora-light-v1"
@@ -172,3 +172,4 @@ App 已实现：
 - 进度条和百分比；
 - 成功/失败提示；
 - 升级期间屏蔽普通控制。
+
