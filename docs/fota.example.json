@@ -1,9 +1,10 @@
 {
-  "versionCode": 260,
-  "versionName": "1.2.3",
-  "fileUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/fw-v1.2.3/aurora-light-v1.2.3.fot",
+  "versionCode": 4097,
+  "versionName": "1.0.1",
+  "force": false,
+  "fileUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/fw-v1.0.1/aurora-light-v1.0.1.fot",
   "sha256": "REPLACE_WITH_SHA256",
-  "size": 456789,
+  "size": 74752,
   "changelog": "修复了已知问题",
   "model": "aurora-light-v1"
 }

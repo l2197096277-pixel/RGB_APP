@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_update_dialog"
+    android:orientation="vertical"
+    android:padding="18dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif-medium"
+            android:letterSpacing="0.16"
+            android:text="OTA LOG"
+            android:textColor="@color/mint"
+            android:textSize="11sp" />
+
+        <TextView
+            android:id="@+id/fotaLogClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_update_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingStart="14dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="7dp"
+            android:text="关闭"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/fotaLogScroll"
+        android:layout_width="match_parent"
+        android:layout_height="360dp"
+        android:layout_marginTop="12dp"
+        android:background="#99050A12"
+        android:padding="10dp"
+        android:scrollbars="vertical">
+
+        <TextView
+            android:id="@+id/fotaLogText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="monospace"
+            android:lineSpacingExtra="2dp"
+            android:text=""
+            android:textColor="@color/text_secondary"
+            android:textSize="9sp"
+            android:textIsSelectable="true" />
+    </ScrollView>
+</LinearLayout>

@@ -41,6 +41,23 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/fotaLog"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_update_secondary"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingStart="12dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="8dp"
+            android:text="Log"
+            android:textColor="@color/mint_soft"
+            android:textSize="10sp"
+            android:visibility="gone" />
+
+        <TextView
             android:id="@+id/fotaClose"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

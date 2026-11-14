@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.security.MessageDigest;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -35,6 +37,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
 
     public static final String EXTRA_ADDRESS = "fota_address";
     public static final String EXTRA_NAME = "fota_name";
+    public static final String EXTRA_DEV_MODE = "fota_dev_mode";
 
     private final Handler main = new Handler(Looper.getMainLooper());
     private final ABOta abOta = new ABOta();
@@ -60,7 +63,11 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     private boolean otaStarted;
     private boolean busy;
     private boolean success;
+    private boolean developerMode;
     private int currentVersion = -1;
+    private final StringBuilder logBuffer = new StringBuilder();
+    private Dialog logDialog;
+    private TextView logTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,6 +76,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
         prefs = getSharedPreferences("aurora_settings", MODE_PRIVATE);
         address = getIntent().getStringExtra(EXTRA_ADDRESS);
         deviceName = getIntent().getStringExtra(EXTRA_NAME);
+        developerMode = getIntent().getBooleanExtra(EXTRA_DEV_MODE, false);
         if (address == null || address.trim().isEmpty()) {
             Toast.makeText(this, "缺少设备地址", Toast.LENGTH_SHORT).show();
             finish();
@@ -90,6 +98,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
             currentView.setText("当前固件：" + versionText(last));
         }
         actionView.setOnClickListener(v -> finish());
+        TextView logButton = findViewById(R.id.fotaLog);
+        logButton.setVisibility(developerMode ? View.VISIBLE : View.GONE);
+        logButton.setOnClickListener(v -> showLogDialog());
         closeView.setOnClickListener(v -> {
             if (busy) {
                 Toast.makeText(this, "升级过程中不能退出", Toast.LENGTH_SHORT).show();
@@ -143,7 +154,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
             showAction("返回");
             return;
         }
-        if (currentVersion >= manifest.versionCode) {
+        if (!manifest.force && currentVersion >= manifest.versionCode) {
             statusView.setText("当前已是最新固件。");
             prefs.edit().putInt("last_fw_version", currentVersion)
                     .putBoolean("fw_update_available", false).apply();
@@ -153,6 +164,8 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
 
         prefs.edit().putInt("last_fw_version", currentVersion)
                 .putBoolean("fw_update_available", true).apply();
+        appendLog("发现固件：当前 " + (currentVersion > 0 ? versionText(currentVersion) : "未知")
+                + "，目标 " + manifest.versionName + "，force=" + manifest.force);
         showConfirmDialog();
     }
 
@@ -182,6 +195,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
         }
         userConfirmed = true;
         busy = true;
+        appendLog("开始下载：" + manifest.fileUrl);
+        appendLog("目标版本：" + manifest.versionName + " / " + manifest.versionCode
+                + " / force=" + manifest.force);
         closeView.setVisibility(View.GONE);
         progressBar.setProgress(0);
         percentView.setText("0%");
@@ -198,7 +214,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
                 }
                 main.post(() -> {
                     statusView.setText("固件下载完成，正在准备升级…");
-                    abOta.setOtaFirmwareVersion(manifest.versionCode);
+                    appendLog("下载完成，大小=" + data.length + "，SHA-256=" + sha);
+                    abOta.setOtaFirmwareVersion(manifest.force ? 0xFFFF : manifest.versionCode);
+                    appendLog("OTA 请求版本：" + (manifest.force ? "0xFFFF（强制）" : "0x" + Integer.toHexString(manifest.versionCode)));
                     abOta.setOtaData(data);
                     if (abOta.isReadyToUpdate() && !otaStarted) {
                         startOta();
@@ -271,6 +289,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
         busy = false;
         success = false;
         main.post(() -> {
+            appendLog("失败：" + message);
             setProgress(0, null);
             statusView.setText("升级失败：" + message
                     + "\n\n请保持灯带通电，靠近手机后重试。\n如果多次失败，请联系售后，不要反复断电。");
@@ -289,6 +308,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
         setProgress(100, "升级成功\n\n请返回 App 重新连接蓝牙。");
         prefs.edit().putInt("last_fw_version", manifest.versionCode)
                 .putBoolean("fw_update_available", false).apply();
+        appendLog("升级成功，记录固件版本=" + manifest.versionCode);
         actionView.setText("返回并重新连接");
         actionView.setVisibility(View.VISIBLE);
         closeView.setVisibility(View.VISIBLE);
@@ -306,6 +326,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
         setProgress(100, "升级包已发送完成。\n设备正在解压并重启，请勿断电。\n\n完成后返回 App 重新连接。");
         prefs.edit().putInt("last_fw_version", manifest.versionCode)
                 .putBoolean("fw_update_available", false).apply();
+        appendLog("升级包发送完成，进入等待设备解压状态");
         actionView.setText("完成并返回");
         actionView.setVisibility(View.VISIBLE);
         closeView.setVisibility(View.VISIBLE);
@@ -357,6 +378,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     @Override
     public void onReady() {
         runOnUiThread(() -> {
+            appendLog("BLE Ready，开始读取设备信息");
             statusView.setText("正在读取固件版本…");
             abOta.prepareToUpdate();
         });
@@ -373,7 +395,13 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     }
 
     @Override
+    public void onLog(String line) {
+        appendLog(line);
+    }
+
+    @Override
     public void onDisconnected(String reason) {
+        appendLog("断开：" + reason);
         if (busy && !success) {
             fail(reason == null ? "蓝牙连接已断开" : reason);
         }
@@ -381,6 +409,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
 
     @Override
     public void onError(String message) {
+        appendLog("BLE 错误：" + message);
         if (busy) {
             fail(message);
         } else {
@@ -398,11 +427,13 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
         runOnUiThread(() -> {
             switch (status) {
                 case ABOta.OTA_STATUS_READY:
+                    appendLog("OTA Ready");
                     if (userConfirmed && !otaStarted && abOta.isReadyToUpdate()) {
                         startOta();
                     }
                     break;
                 case ABOta.OTA_STATUS_START:
+                    appendLog("OTA START");
                     busy = true;
                     setProgress(0, "正在升级灯带固件…");
                     break;
@@ -410,18 +441,23 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
                     setProgress(value, "正在升级灯带固件…");
                     break;
                 case ABOta.OTA_STATUS_PAUSE:
+                    appendLog("OTA PAUSE");
                     statusView.setText("升级已暂停，等待设备继续…");
                     break;
                 case ABOta.OTA_STATUS_CONTINUE:
+                    appendLog("OTA CONTINUE");
                     statusView.setText("设备已继续升级…");
                     break;
                 case ABOta.OTA_STATUS_SUCCESS:
+                    appendLog("OTA SUCCESS");
                     finishSuccess();
                     break;
                 case ABOta.OTA_STATUS_WAIT_FINISH:
+                    appendLog("OTA WAIT_FINISH");
                     finishWait();
                     break;
                 case ABOta.OTA_STATUS_FAIL:
+                    appendLog("OTA FAIL " + value);
                     fail(errorText(value));
                     break;
                 default:
@@ -436,6 +472,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
             currentVersion = version;
             versionLoaded = true;
             currentView.setText("当前固件：" + versionText(version));
+            appendLog("当前固件：" + versionText(version) + " (0x" + Integer.toHexString(version) + ")");
             if (busy || userConfirmed) {
                 return;
             }
@@ -478,6 +515,54 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
         int c = (version >> 4) & 0x0F;
         int d = version & 0x0F;
         return "v" + a + "." + b + "." + c + "." + d;
+    }
+
+    private void appendLog(String line) {
+        String stamp = new SimpleDateFormat("HH:mm:ss", Locale.CHINA).format(new Date());
+        main.post(() -> {
+            logBuffer.append(stamp).append("  ").append(line).append('\n');
+            if (logBuffer.length() > 24000) {
+                logBuffer.delete(0, logBuffer.length() - 18000);
+            }
+            if (logTextView != null) {
+                logTextView.setText(logBuffer.toString());
+                if (logDialog != null && logDialog.isShowing()) {
+                    android.view.View scroll = logDialog.findViewById(R.id.fotaLogScroll);
+                    if (scroll instanceof android.widget.ScrollView) {
+                        ((android.widget.ScrollView) scroll).fullScroll(130);
+                    }
+                }
+            }
+        });
+    }
+
+    private void showLogDialog() {
+        if (logDialog != null && logDialog.isShowing()) {
+            return;
+        }
+        logDialog = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
+        logDialog.setContentView(R.layout.dialog_fota_log);
+        logDialog.setCanceledOnTouchOutside(true);
+        logTextView = logDialog.findViewById(R.id.fotaLogText);
+        logTextView.setText(logBuffer.toString());
+        logDialog.findViewById(R.id.fotaLogClose).setOnClickListener(v -> {
+            logDialog.dismiss();
+            logTextView = null;
+        });
+        Window window = logDialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams lp = window.getAttributes();
+            lp.dimAmount = 0.55f;
+            lp.gravity = android.view.Gravity.CENTER;
+            window.setAttributes(lp);
+        }
+        logDialog.show();
+        if (window != null) {
+            window.setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.94f),
+                    WindowManager.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private static String sha256(byte[] data) throws Exception {

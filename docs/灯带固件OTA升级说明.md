@@ -80,11 +80,12 @@ Get-FileHash ".\aurora-light-v1.2.3.fot" -Algorithm SHA256
 
 ```json
 {
-  "versionCode": 260,
-  "versionName": "1.2.3",
-  "fileUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/fw-v1.2.3/aurora-light-v1.2.3.fot",
+  "versionCode": 4097,
+  "versionName": "1.0.1",
+  "force": false,
+  "fileUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/fw-v1.0.1/aurora-light-v1.0.1.fot",
   "sha256": "把上一步的SHA256填在这里",
-  "size": 456789,
+  "size": 74752,
   "changelog": "修复了已知问题",
   "model": "aurora-light-v1"
 }
@@ -96,6 +97,7 @@ Get-FileHash ".\aurora-light-v1.2.3.fot" -Algorithm SHA256
 |---|---|
 | `versionCode` | 固件版本号，数字，必须大于当前设备版本 |
 | `versionName` | 显示给用户的版本名 |
+| `force` | 是否强制升级；`true` 时 App 向设备发送 `0xFFFF`，升级成功后仍记录 `versionCode` |
 | `fileUrl` | `.fot` 的 HTTPS 下载地址 |
 | `sha256` | `.fot` 的 SHA-256 |
 | `size` | 文件字节数，可选 |

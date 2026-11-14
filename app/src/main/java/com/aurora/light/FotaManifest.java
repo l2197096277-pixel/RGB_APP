@@ -15,20 +15,25 @@ public final class FotaManifest {
     public final String fileUrl;
     public final String sha256;
     public final String notes;
+    public final boolean force;
 
     private FotaManifest(int versionCode, String versionName, String fileUrl,
-                         String sha256, String notes) {
+                         String sha256, String notes, boolean force) {
         this.versionCode = versionCode;
         this.versionName = versionName;
         this.fileUrl = fileUrl;
         this.sha256 = sha256;
         this.notes = notes;
+        this.force = force;
     }
 
     public static FotaManifest fetch(String url) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setConnectTimeout(8000);
         connection.setReadTimeout(8000);
+        connection.setUseCaches(false);
+        connection.setRequestProperty("Cache-Control", "no-cache, no-store");
+        connection.setRequestProperty("Pragma", "no-cache");
         connection.setRequestProperty("Accept", "application/json");
         connection.setRequestProperty("User-Agent", "AuroraLight/" + BuildConfig.VERSION_NAME);
         connection.setInstanceFollowRedirects(true);
@@ -52,7 +57,8 @@ public final class FotaManifest {
                 }
                 return new FotaManifest(version, name, file,
                         json.optString("sha256", ""),
-                        json.optString("changelog", "修复了已知问题"));
+                        json.optString("changelog", "修复了已知问题"),
+                        json.optBoolean("force", false));
             }
         } finally {
             connection.disconnect();

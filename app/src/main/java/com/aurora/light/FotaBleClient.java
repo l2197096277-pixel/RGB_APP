@@ -30,6 +30,8 @@ public class FotaBleClient {
         void onDisconnected(String reason);
 
         void onError(String message);
+
+        void onLog(String line);
     }
 
     private static final UUID SERVICE = UUID.fromString("0000ff12-0000-1000-8000-00805f9b34fb");
@@ -101,6 +103,7 @@ public class FotaBleClient {
         try {
             writeChar.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
             writeChar.setValue(data);
+            listener.onLog("TX " + AuroraProtocol.bytesToHex(data));
             gatt.writeCharacteristic(writeChar);
         } catch (Exception e) {
             listener.onError("OTA 发送失败：" + e.getMessage());
@@ -168,12 +171,14 @@ public class FotaBleClient {
         public void onMtuChanged(BluetoothGatt g, int newMtu, int status) {
             mtu = Math.max(23, newMtu);
             ready = true;
+            listener.onLog("MTU " + mtu + " status=" + status);
             listener.onReady();
         }
 
         @Override
         public void onCharacteristicChanged(BluetoothGatt g, BluetoothGattCharacteristic ch) {
             if (ch.getValue() != null) {
+                listener.onLog("RX " + AuroraProtocol.bytesToHex(ch.getValue()));
                 listener.onData(ch.getValue());
             }
         }

@@ -859,9 +859,10 @@ ScanSheet.Host {
 
     private void buildChangelogHistory() {
         this.versionLabel.setText((CharSequence)("v" + BuildConfig.VERSION_NAME));
-        this.changelogCurrentVersion.setText((CharSequence)("v" + BuildConfig.VERSION_NAME + " · 2026-11-14 01:30"));
+        this.changelogCurrentVersion.setText((CharSequence)("v" + BuildConfig.VERSION_NAME + " · 2026-11-15"));
         this.changelogHistoryList.removeAllViews();
         String[][] history = {
+                {"v1.1.2", "2026-11-15"},
                 {"v1.1.1", "2026-11-14"},
                 {"v1.1.0", "2026-11-14"},
                 {"v1.0.9", "2026-11-13"},
@@ -905,12 +906,29 @@ ScanSheet.Host {
                 this.changelogHistoryList.addView(divider);
             }
         }
+        this.updateChangelogVisibility();
+    }
+
+    private void updateChangelogVisibility() {
+        if (this.changelogToggle == null || this.changelogHistoryList == null) {
+            return;
+        }
+        this.changelogToggle.setVisibility(this.developerMode ? View.VISIBLE : View.GONE);
+        if (!this.developerMode) {
+            this.changelogExpanded = false;
+        }
+        this.changelogHistoryList.setVisibility(
+                this.developerMode && this.changelogExpanded ? View.VISIBLE : View.GONE);
+        this.changelogToggle.setText((CharSequence)
+                (this.changelogExpanded ? "收起历史" : "查看历史"));
     }
 
     private void toggleChangelog() {
+        if (!this.developerMode) {
+            return;
+        }
         this.changelogExpanded = !this.changelogExpanded;
-        this.changelogHistoryList.setVisibility(this.changelogExpanded ? 0 : 8);
-        this.changelogToggle.setText((CharSequence)(this.changelogExpanded ? "收起历史" : "查看历史"));
+        this.updateChangelogVisibility();
     }
 
     private void checkFirmwareUpdate() {
@@ -929,6 +947,7 @@ ScanSheet.Host {
         android.content.Intent intent = new android.content.Intent(this, FotaActivity.class);
         intent.putExtra(FotaActivity.EXTRA_ADDRESS, address);
         intent.putExtra(FotaActivity.EXTRA_NAME, this.ble.currentName());
+        intent.putExtra(FotaActivity.EXTRA_DEV_MODE, this.developerMode);
         this.startActivity(intent);
     }
 
@@ -937,6 +956,11 @@ ScanSheet.Host {
             return;
         }
         int version = this.prefs.getInt("last_fw_version", 0);
+        // 旧版本曾把强制升级的 0xFFFF 当成真实版本保存，迁移一次。
+        if (version == 0xFFFF) {
+            this.prefs.edit().putInt("last_fw_version", 0).apply();
+            version = 0;
+        }
         this.currentFirmware.setText((CharSequence)(version > 0
                 ? "当前固件：" + firmwareVersionText(version)
                 : "当前固件：未读取"));
@@ -957,7 +981,7 @@ ScanSheet.Host {
             }
             this.runOnUiThread(() -> {
                 int known = this.prefs.getInt("last_fw_version", 0);
-                boolean available = known == 0 || result.versionCode > known;
+                boolean available = result.force || known == 0 || result.versionCode > known;
                 this.prefs.edit().putBoolean("fw_update_available", available).apply();
                 this.updateFirmwareUi();
             });
@@ -1002,6 +1026,7 @@ ScanSheet.Host {
     private void toggleDeveloperMode() {
         this.developerMode = !this.developerMode;
         this.updateDevPanelVisibility();
+        this.updateChangelogVisibility();
         if (this.developerMode && this.currentPage == 2) {
             this.renderDevLog();
             this.toast("开发者模式已开启");
@@ -1050,6 +1075,7 @@ ScanSheet.Host {
         this.tabEffects.setAlpha(this.currentPage == 1 ? 1.0f : 0.72f);
         this.tabProfile.setAlpha(this.currentPage == 2 ? 1.0f : 0.72f);
         this.updateDevPanelVisibility();
+        this.updateChangelogVisibility();
         if (this.developerMode && this.currentPage == 2) {
             this.renderDevLog();
         }
