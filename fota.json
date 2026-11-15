@@ -1,10 +1,10 @@
 {
-  "versionCode": 4096,
-  "versionName": "1.0.0",
+  "versionCode": 4097,
+  "versionName": "1.0.1",
   "force": false,
-  "fileUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/fir-v1.0.0/RGB-v1.0.0-20261115.fot",
-  "sha256": "650850F47076CA376BD1135575B63B7E87BDBC63B0BF175DFE052DB991DD0A93",
-  "size": 74752,
+  "fileUrl": "https://l2197096277-pixel.github.io/RGB_APP/RGB-v1.0.1-20261116.fot",
+  "sha256": "8B888D06C9B3A4D7C0359DC0053DBBA685F02F7889FD22CF3A9FB0EF0C25A9DE",
+  "size": 75264,
   "changelog": "修复了已知问题",
   "model": "aurora-light-v1"
 }
