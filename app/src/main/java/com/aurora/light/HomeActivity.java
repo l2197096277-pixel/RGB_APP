@@ -2,6 +2,7 @@ package com.aurora.light;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.ClipData;
@@ -373,7 +374,7 @@ public class HomeActivity extends Activity
             }
             updateControlUi();
         });
-        modeSelfTest.setOnClickListener(v -> toggleMode(MODE_SELF_TEST));
+        modeSelfTest.setOnClickListener(v -> confirmSelfTest());
         modeRunning.setOnClickListener(v -> toggleMode(MODE_RUNNING));
         modeBreathe.setOnClickListener(v -> toggleMode(MODE_BREATHE));
         modeFlame.setOnClickListener(v -> toggleMode(MODE_FLAME));
@@ -623,8 +624,24 @@ public class HomeActivity extends Activity
         profileDot.setVisibility(index == 1 ? View.VISIBLE : View.INVISIBLE);
     }
 
-    private void toggleMode(int mode) {
+    private void confirmSelfTest() {
         if (!powerOn) {
+            toast("请先打开灯光总开关");
+            return;
+        }
+        if (activeMode == MODE_SELF_TEST) {
+            toggleMode(MODE_SELF_TEST);
+            return;
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("开始自检？")
+                .setMessage("确认后灯带会执行自检效果。")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("开始自检", (dialog, which) -> toggleMode(MODE_SELF_TEST))
+                .show();
+    }
+
+    private void toggleMode(int mode) {        if (!powerOn) {
             toast("请先打开灯光总开关");
             return;
         }
@@ -1159,17 +1176,32 @@ public class HomeActivity extends Activity
             del.setTextColor(getColor(R.color.ls_tertiary));
             del.setTextSize(9);
             del.setPadding(dp(10), dp(6), 0, dp(6));
-            del.setOnClickListener(v -> {
-                musicTracks.remove(index);
-                if (currentTrackIndex == index) stopMusic();
-                saveMusic();
-                refreshMusicList();
-            });
+            del.setOnClickListener(v -> confirmDeleteTrack(index));
             row.addView(name);
             row.addView(del);
             row.setOnClickListener(v -> playTrack(index));
             musicList.addView(row);
         }
+    }
+
+    private void confirmDeleteTrack(int index) {
+        if (index < 0 || index >= musicTracks.size()) return;
+        MusicTrack track = musicTracks.get(index);
+        new AlertDialog.Builder(this)
+                .setTitle("删除音乐？")
+                .setMessage("确定从列表删除“" + track.name + "”吗？")
+                .setNegativeButton("取消", null)
+                .setPositiveButton("删除", (dialog, which) -> {
+                    musicTracks.remove(track);
+                    if (currentTrackIndex == index) {
+                        stopMusic();
+                    } else if (currentTrackIndex > index) {
+                        currentTrackIndex--;
+                    }
+                    saveMusic();
+                    refreshMusicList();
+                })
+                .show();
     }
 
     private void playTrack(int index) {
