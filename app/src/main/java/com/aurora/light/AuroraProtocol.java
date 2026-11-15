@@ -47,6 +47,7 @@ public final class AuroraProtocol {
     public static final int LS_MODE_FLAME = 0x04;
     public static final int LS_MODE_MUSIC = 0x05;
     public static final int LS_MODE_STEADY = 0x0F;
+    public static final int LS_MODE_LED_COUNT = 0x06;
     public static final int LS_PRODUCT_ID = 0xAA01;
 
     public static final int[] LS_COLOR_RGB = {
@@ -121,11 +122,30 @@ public final class AuroraProtocol {
     }
 
     public static byte[] lsRunning(boolean on) {
-        return lsFrame(LS_MODE_RUNNING, (byte) (on ? 1 : 0));
+        return lsRunning(on, 1);
+    }
+
+    /** V1.0.1：跑马灯增加颜色字节。 */
+    public static byte[] lsRunning(boolean on, int colorIndex) {
+        return lsFrame(LS_MODE_RUNNING,
+                (byte) (on ? 1 : 0),
+                (byte) clamp(colorIndex, 1, 9));
     }
 
     public static byte[] lsBreathe(boolean on) {
-        return lsFrame(LS_MODE_BREATHE, (byte) (on ? 1 : 0));
+        return lsBreathe(on, 1);
+    }
+
+    /** V1.0.1：呼吸灯增加颜色字节。 */
+    public static byte[] lsBreathe(boolean on, int colorIndex) {
+        return lsFrame(LS_MODE_BREATHE,
+                (byte) (on ? 1 : 0),
+                (byte) clamp(colorIndex, 1, 9));
+    }
+
+    /** V1.0.1：设置产品实际 RGB 灯珠数量，必须在开灯前发送。 */
+    public static byte[] lsLedCount(int count) {
+        return lsFrame(LS_MODE_LED_COUNT, (byte) clamp(count, 1, 255));
     }
 
     public static byte[] lsFlame(boolean on, int colorIndex) {

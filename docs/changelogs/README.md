@@ -4,6 +4,7 @@
 
 | 版本 | 日期 | 文档 |
 |---|---|---|
+| v1.2.0 | 2026-11-15 | [v1.2.0.md](v1.2.0.md) |
 | v1.1.9 | 2026-11-15 | [v1.1.9.md](v1.1.9.md) |
 | v1.1.8 | 2026-11-15 | [v1.1.8.md](v1.1.8.md) |
 | v1.1.7 | 2026-11-15 | [v1.1.7.md](v1.1.7.md) |
@@ -28,7 +29,7 @@
 ## 查看方式
 
 - Android Studio / VS Code：直接打开 `docs/changelogs/`；
-- PDF：`docs/AuroraLight-Manual-v1.1.9.pdf`；
+- PDF：`docs/AuroraLight-Manual-v1.2.0.pdf`；
 - 汇总索引：项目根目录 `CHANGELOG.md`。
 
 ## 版本规则

@@ -124,6 +124,82 @@
                     android:trackTint="#B7C7FF" />
             </LinearLayout>
 
+            <LinearLayout
+                android:id="@+id/ledCountCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_ls_card"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="实际灯珠数量"
+                            android:textColor="@color/ls_text"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/ledCountStatus"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="3dp"
+                            android:text="开灯前必须先设置，关灯后才能修改"
+                            android:textColor="@color/ls_tertiary"
+                            android:textSize="9sp" />
+                    </LinearLayout>
+
+                    <EditText
+                        android:id="@+id/ledCountInput"
+                        android:layout_width="66dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_ls_pill"
+                        android:gravity="center"
+                        android:hint="数量"
+                        android:inputType="number"
+                        android:maxLength="3"
+                        android:padding="0dp"
+                        android:textColor="@color/ls_text"
+                        android:textColorHint="@color/ls_tertiary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="5dp"
+                        android:text="颗"
+                        android:textColor="@color/ls_tertiary"
+                        android:textSize="9sp" />
+
+                    <TextView
+                        android:id="@+id/ledCountApply"
+                        android:layout_width="58dp"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_ls_rgb"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:text="应用"
+                        android:textColor="#FFFFFF"
+                        android:textSize="10sp" />
+                </LinearLayout>
+            </LinearLayout>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

@@ -26,6 +26,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
@@ -132,6 +134,9 @@ public class HomeActivity extends Activity
     private View brightnessSection;
     private SeekBar brightnessSeek;
     private TextView brightnessValue;
+    private EditText ledCountInput;
+    private TextView ledCountApply;
+    private TextView ledCountStatus;
 
     private View backMusic;
     private TextView currentMusic;
@@ -155,12 +160,18 @@ public class HomeActivity extends Activity
     private int steadyCount = 1;
     private int brightnessPercent = 100;
     private long lastBrightnessSend;
+    private int actualLedCount;
+    private boolean ledCountArmed;
     private boolean autoConnectPending;
     private boolean returningFromFota;
     private boolean suppressDisconnectToast;
     private boolean suppressConnectedToast;
     private boolean openControlOnReady;
     private boolean suppressBleErrorAfterFota;
+    private String pendingConnectAddress;
+    private String pendingConnectName;
+    private boolean fallbackScanning;
+    private boolean fallbackAttempted;
 
     private final List<DeviceRecord> deviceRecords = new ArrayList<>();
     private final List<MusicTrack> musicTracks = new ArrayList<>();
@@ -267,6 +278,9 @@ public class HomeActivity extends Activity
         brightnessSection = findViewById(R.id.brightnessSection);
         brightnessSeek = findViewById(R.id.brightnessSeek);
         brightnessValue = findViewById(R.id.brightnessValue);
+        ledCountInput = findViewById(R.id.ledCountInput);
+        ledCountApply = findViewById(R.id.ledCountApply);
+        ledCountStatus = findViewById(R.id.ledCountStatus);
 
         backMusic = findViewById(R.id.backMusic);
         currentMusic = findViewById(R.id.currentMusic);
@@ -444,8 +458,17 @@ public class HomeActivity extends Activity
     private void initControl() {
         backControl.setOnClickListener(v -> exitControl());
         powerSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !ledCountArmed) {
+                powerSwitch.setChecked(false);
+                toast("请先设置实际灯珠数量，再开启灯光");
+                ledCountInput.requestFocus();
+                return;
+            }
             if (!isChecked && activeMode == MODE_MUSIC) stopMusic();
             powerOn = isChecked;
+            if (!isChecked) {
+                ledCountArmed = false;
+            }
             if (ble != null && ble.isReady()) {
                 sendModeFrame(AuroraProtocol.lsPower(isChecked), 3);
             }
@@ -454,6 +477,17 @@ public class HomeActivity extends Activity
             }
             appendDevLog(isChecked ? "总开关：开" : "总开关：关");
             updateControlUi();
+        });
+        ledCountApply.setOnClickListener(v -> applyLedCount());
+        ledCountInput.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) { }
+            @Override public void afterTextChanged(Editable s) {
+                if (ledCountArmed) {
+                    ledCountArmed = false;
+                    updateControlUi();
+                }
+            }
         });
         modeSelfTest.setOnClickListener(v -> confirmSelfTest());
         modeRunning.setOnClickListener(v -> toggleMode(MODE_RUNNING));
@@ -560,7 +594,8 @@ public class HomeActivity extends Activity
         if (flamePreview != null && activeMode == MODE_FLAME) {
             flamePreview.setFlameColor(AuroraProtocol.LS_COLOR_RGB[selectedColor - 1]);
         }
-        if (powerOn && (activeMode == MODE_FLAME || activeMode == MODE_STEADY)) {
+        if (powerOn && (activeMode == MODE_RUNNING || activeMode == MODE_BREATHE
+                || activeMode == MODE_FLAME || activeMode == MODE_STEADY)) {
             sendCurrentMode();
         }
     }
@@ -674,6 +709,12 @@ public class HomeActivity extends Activity
         musicPage.setVisibility(View.GONE);
         bottomNav.setVisibility(View.GONE);
         powerOn = false;
+        ledCountArmed = false;
+        actualLedCount = 0;
+        if (ledCountInput != null) ledCountInput.setText("");
+        if (ledCountStatus != null) {
+            ledCountStatus.setText("开灯前必须先设置，关灯后才能修改");
+        }
         powerSwitch.setChecked(false);
         activeMode = MODE_NONE;
         updateControlUi();
@@ -794,9 +835,9 @@ public class HomeActivity extends Activity
             case MODE_SELF_TEST:
                 return AuroraProtocol.lsSelfTest(on);
             case MODE_RUNNING:
-                return AuroraProtocol.lsRunning(on);
+                return AuroraProtocol.lsRunning(on, selectedColor);
             case MODE_BREATHE:
-                return AuroraProtocol.lsBreathe(on);
+                return AuroraProtocol.lsBreathe(on, selectedColor);
             case MODE_FLAME:
                 return AuroraProtocol.lsFlame(on, selectedColor);
             case MODE_STEADY:
@@ -823,6 +864,40 @@ public class HomeActivity extends Activity
         }
     }
 
+    private void applyLedCount() {
+        if (powerOn) {
+            toast("请先关闭灯光，再修改灯珠数量");
+            return;
+        }
+        String text = ledCountInput.getText().toString().trim();
+        if (text.isEmpty()) {
+            toast("请输入实际灯珠数量");
+            ledCountInput.requestFocus();
+            return;
+        }
+        int value;
+        try {
+            value = Integer.parseInt(text);
+        } catch (NumberFormatException e) {
+            toast("灯珠数量格式不正确");
+            return;
+        }
+        if (value < 1 || value > 255) {
+            toast("灯珠数量范围为 1–255");
+            return;
+        }
+        actualLedCount = value;
+        ledCountArmed = true;
+        prefs.edit().putInt("ls_led_count", value).apply();
+        sendModeFrame(AuroraProtocol.lsLedCount(value), 3);
+        if (steadyCount > actualLedCount) steadyCount = actualLedCount;
+        countInput.setText(String.valueOf(steadyCount));
+        ledCountStatus.setText("已设置 " + value + " 颗，可以开灯");
+        appendDevLog("设置实际灯珠数量：" + value);
+        updateControlUi();
+        toast("灯珠数量已设置");
+    }
+
     private void applyCount() {
         String text = countInput.getText().toString().trim();
         if (text.isEmpty()) {
@@ -831,7 +906,8 @@ public class HomeActivity extends Activity
         }
         try {
             int value = Integer.parseInt(text);
-            steadyCount = Math.max(1, Math.min(255, value));
+            int max = actualLedCount > 0 ? actualLedCount : 255;
+            steadyCount = Math.max(1, Math.min(max, value));
         } catch (NumberFormatException e) {
             steadyCount = 1;
         }
@@ -857,7 +933,9 @@ public class HomeActivity extends Activity
             view.setTextColor(getColor(selected ? R.color.ls_accent : R.color.ls_text));
             view.setAlpha(powerOn ? 1f : 0.45f);
         }
-        boolean showColor = powerOn && (activeMode == MODE_FLAME || activeMode == MODE_STEADY);
+        boolean showColor = powerOn && (activeMode == MODE_RUNNING
+                || activeMode == MODE_BREATHE
+                || activeMode == MODE_FLAME || activeMode == MODE_STEADY);
         colorSection.setVisibility(showColor ? View.VISIBLE : View.GONE);
         flamePreview.setVisibility(powerOn && activeMode == MODE_FLAME
                 ? View.VISIBLE : View.GONE);
@@ -867,6 +945,16 @@ public class HomeActivity extends Activity
         boolean showSteady = powerOn && activeMode == MODE_STEADY;
         countSection.setVisibility(showSteady ? View.VISIBLE : View.GONE);
         brightnessSection.setVisibility(showSteady ? View.VISIBLE : View.GONE);
+        ledCountInput.setEnabled(!powerOn);
+        ledCountApply.setEnabled(!powerOn);
+        ledCountApply.setAlpha(powerOn ? 0.4f : 1f);
+        if (powerOn) {
+            ledCountStatus.setText("灯光已开启，关闭后才能修改数量");
+        } else if (ledCountArmed) {
+            ledCountStatus.setText("已设置 " + actualLedCount + " 颗，可以开灯");
+        } else {
+            ledCountStatus.setText("开灯前必须先设置，关灯后才能修改");
+        }
         powerHint.setText(powerOn ? "灯光已开启，可使用光效" : "关闭时其他功能不可用");
         controlStatus.setText(ble != null && ble.isReady() ? "已连接" : "未连接");
         if (showSteady) {
@@ -895,6 +983,10 @@ public class HomeActivity extends Activity
         suppressConnectedToast = false;
         suppressDisconnectToast = false;
         suppressBleErrorAfterFota = false;
+        pendingConnectAddress = null;
+        pendingConnectName = null;
+        fallbackScanning = false;
+        fallbackAttempted = false;
         refreshConnectionCard();
         if (openControlOnReady) {
             openControlOnReady = false;
@@ -915,6 +1007,9 @@ public class HomeActivity extends Activity
         powerOn = false;
         activeMode = MODE_NONE;
         openControlOnReady = false;
+        fallbackScanning = false;
+        pendingConnectAddress = null;
+        pendingConnectName = null;
         controlStatus.setText("未连接");
         appendDevLog("已断开：" + (reason == null ? "" : reason));
         boolean silent = suppressDisconnectToast;
@@ -939,7 +1034,14 @@ public class HomeActivity extends Activity
             refreshConnectionCard();
             return;
         }
+        if (!fallbackAttempted && !TextUtils.isEmpty(pendingConnectName)) {
+            startFallbackScan();
+            return;
+        }
         openControlOnReady = false;
+        pendingConnectAddress = null;
+        pendingConnectName = null;
+        fallbackScanning = false;
         refreshConnectionCard();
         if (scanSheet != null && scanSheet.isShowing()) {
             scanSheet.onConnectFailed(message);
@@ -956,17 +1058,68 @@ public class HomeActivity extends Activity
 
     @Override
     public void onScanResult(BleDevice device) {
+        if (fallbackScanning && device != null) {
+            boolean sameAddress = !TextUtils.isEmpty(pendingConnectAddress)
+                    && normalizeAddress(pendingConnectAddress).equals(normalizeAddress(device.address));
+            boolean sameName = !TextUtils.isEmpty(pendingConnectName)
+                    && pendingConnectName.equalsIgnoreCase(device.displayName());
+            if (sameAddress || sameName || device.isRgbProduct()) {
+                fallbackScanning = false;
+                if (ble != null) ble.stopScan(false);
+                toast("已重新找到设备，正在连接…");
+                ble.connect(device);
+                return;
+            }
+        }
         if (scanSheet != null) scanSheet.addDevice(device);
     }
 
     @Override
     public void onScanFinished() {
+        if (fallbackScanning) {
+            fallbackScanning = false;
+            openControlOnReady = false;
+            pendingConnectAddress = null;
+            pendingConnectName = null;
+            toast("没有重新找到设备，请手动扫描连接");
+        }
         if (scanSheet != null) scanSheet.onScanFinished();
     }
 
     @Override
     public void onScanError(String message) {
+        if (fallbackScanning) {
+            fallbackScanning = false;
+            openControlOnReady = false;
+            pendingConnectAddress = null;
+            pendingConnectName = null;
+            toast(TextUtils.isEmpty(message) ? "扫描失败，请重试" : message);
+        }
         if (scanSheet != null) scanSheet.onScanError(message);
+    }
+
+    private void startFallbackScan() {
+        fallbackAttempted = true;
+        fallbackScanning = true;
+        toast("直连失败，正在重新搜索设备…");
+        if (ble == null || !ble.startScan()) {
+            fallbackScanning = false;
+            openControlOnReady = false;
+            pendingConnectName = null;
+            toast("无法重新扫描，请手动点击连接");
+        }
+    }
+
+    private void connectHistoryDevice(DeviceRecord d) {
+        if (d == null) return;
+        if (scanSheet != null && scanSheet.isShowing()) scanSheet.dismiss();
+        pendingConnectAddress = d.address;
+        pendingConnectName = d.name;
+        fallbackAttempted = false;
+        fallbackScanning = false;
+        openControlOnReady = true;
+        toast("正在连接…");
+        if (ble != null) ble.connectAddress(d.address, d.name);
     }
 
     private void tryAutoConnect() {
@@ -975,7 +1128,11 @@ public class HomeActivity extends Activity
         if (TextUtils.isEmpty(address)) return;
         if (!hasBlePermission() || !isBleEnabled()) return;
         autoConnectPending = true;
-        ble.connectAddress(address, "LS 幻彩灯");
+        pendingConnectAddress = address;
+        pendingConnectName = prefs.getString(KEY_LAST_NAME, "LS 幻彩灯");
+        fallbackAttempted = false;
+        fallbackScanning = false;
+        ble.connectAddress(address, pendingConnectName);
     }
 
     private void showScan() {
@@ -1003,7 +1160,16 @@ public class HomeActivity extends Activity
         // 兼容旧版本可能写入的重复记录。
         for (int i = deviceRecords.size() - 1; i >= 0; i--) {
             for (int j = 0; j < i; j++) {
-                if (deviceRecords.get(i).address.equalsIgnoreCase(deviceRecords.get(j).address)) {
+                DeviceRecord left = deviceRecords.get(j);
+                DeviceRecord right = deviceRecords.get(i);
+                boolean sameAddress = normalizeAddress(left.address)
+                        .equals(normalizeAddress(right.address));
+                boolean sameName = !TextUtils.isEmpty(left.name)
+                        && left.name.equalsIgnoreCase(right.name);
+                if (sameAddress || sameName) {
+                    // 旧记录保留位置，但地址更新为较新的那条，避免地址变化后直连旧地址。
+                    deviceRecords.get(j).address = right.address;
+                    deviceRecords.get(j).name = right.name;
                     deviceRecords.remove(i);
                     break;
                 }
@@ -1016,7 +1182,9 @@ public class HomeActivity extends Activity
     private void saveDevice(String address, String name) {
         if (TextUtils.isEmpty(address)) return;
         for (DeviceRecord d : deviceRecords) {
-            if (address.equalsIgnoreCase(d.address)) {
+            boolean sameAddress = normalizeAddress(address).equals(normalizeAddress(d.address));
+            boolean sameName = !TextUtils.isEmpty(name) && name.equalsIgnoreCase(d.name);
+            if (sameAddress || sameName) {
                 d.address = address;
                 d.name = name;
                 saveDeviceJson();
@@ -1031,6 +1199,11 @@ public class HomeActivity extends Activity
         while (deviceRecords.size() > 12) deviceRecords.remove(deviceRecords.size() - 1);
         saveDeviceJson();
         renderDevices();
+    }
+
+    private static String normalizeAddress(String address) {
+        if (address == null) return "";
+        return address.replace(":", "").replace("-", "").trim().toUpperCase(Locale.US);
     }
 
     private void saveDeviceJson() {
@@ -1097,10 +1270,7 @@ public class HomeActivity extends Activity
                     renderDevices();
                     toast("已断开连接");
                 } else {
-                    if (scanSheet != null && scanSheet.isShowing()) scanSheet.dismiss();
-                    toast("正在连接…");
-                    openControlOnReady = true;
-                    ble.connectAddress(d.address, d.name);
+                    connectHistoryDevice(d);
                 }
             });
             row.addView(action);
@@ -1118,10 +1288,7 @@ public class HomeActivity extends Activity
                         && d.address.equalsIgnoreCase(ble.currentAddress())) {
                     showControlPage();
                 } else {
-                    if (scanSheet != null && scanSheet.isShowing()) scanSheet.dismiss();
-                    toast("正在连接…");
-                    openControlOnReady = true;
-                    ble.connectAddress(d.address, d.name);
+                    connectHistoryDevice(d);
                 }
             });
             myDevicesList.addView(row);

@@ -85,9 +85,9 @@ public class AuroraProtocolTest {
                 AuroraProtocol.bytesToHex(AuroraProtocol.lsPower(true)));
         assertEquals("11 00 FF 01 01 0A",
                 AuroraProtocol.bytesToHex(AuroraProtocol.lsSelfTest(true)));
-        assertEquals("11 00 02 01 01 0A",
+        assertEquals("11 00 02 02 01 01 0A",
                 AuroraProtocol.bytesToHex(AuroraProtocol.lsRunning(true)));
-        assertEquals("11 00 03 01 01 0A",
+        assertEquals("11 00 03 02 01 01 0A",
                 AuroraProtocol.bytesToHex(AuroraProtocol.lsBreathe(true)));
         assertEquals("11 00 04 02 01 01 0A",
                 AuroraProtocol.bytesToHex(AuroraProtocol.lsFlame(true, 1)));
@@ -95,6 +95,12 @@ public class AuroraProtocolTest {
                 AuroraProtocol.bytesToHex(AuroraProtocol.lsMusic(true, 1, 255)));
         assertEquals("11 00 0F 04 01 01 01 FF 0A",
                 AuroraProtocol.bytesToHex(AuroraProtocol.lsSteady(true, 1, 1, 255)));
+        assertEquals("11 00 02 02 01 07 0A",
+                AuroraProtocol.bytesToHex(AuroraProtocol.lsRunning(true, 7)));
+        assertEquals("11 00 03 02 01 03 0A",
+                AuroraProtocol.bytesToHex(AuroraProtocol.lsBreathe(true, 3)));
+        assertEquals("11 00 06 01 1E 0A",
+                AuroraProtocol.bytesToHex(AuroraProtocol.lsLedCount(30)));
     }
 
     @Test
