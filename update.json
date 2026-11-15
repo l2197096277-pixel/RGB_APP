@@ -1,8 +1,8 @@
 {
-  "versionCode": 19,
-  "versionName": "1.1.8",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.8/AuroraLight-v1.1.8.apk",
-  "sha256": "f6f5480eb5fdd06d51e6d3358c2f7e170e59c25fddcbccdfba3d7d2880461fe8",
-  "changelog": "### 优化\n\n- 焰火改为真正向上的 fire field 动画。\n- 自检、删除音乐统一圆角品牌提示框。\n- App 更新下载改为动态圆环下载框。\n- 已连接卡片改为 RGB 渐变图标。\n- 只有点击“我的设备”里的设备才进入控制。\n- 开发者模式长按 5 秒，新增 LOG 记录发码和模式。\n- 修复 OTA 拒绝升级后误报升级失败。\n\n详细说明：[v1.1.8.md](docs/changelogs/v1.1.8.md)\n\n---",
+  "versionCode": 20,
+  "versionName": "1.1.9",
+  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.9/AuroraLight-v1.1.9.apk",
+  "sha256": "75acc65a77ea814e2d302b468de8333aedd87fdedf5edc8e7ccd5952cb685039",
+  "changelog": "### 修复\n\n- 焰火高度铺满预览，去掉上方空白。\n- OTA 拒绝升级后不再误报升级失败。\n- 连接成功后保持当前页面，只有点击设备才进入控制页。\n\n详细说明：[v1.1.9.md](docs/changelogs/v1.1.9.md)\n\n---",
   "force": true
 }
