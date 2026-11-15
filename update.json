@@ -1,8 +1,8 @@
 {
-  "versionCode": 15,
-  "versionName": "1.1.4",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.4/AuroraLight-v1.1.4.apk",
-  "sha256": "82d21339f0e6232af39f7d0b8cfacade3e7062473d66a259699f757f3200436c",
-  "changelog": "### 优化\n\n- 扫描识别广播中的 FF01 / RGB 产品标记，显示“我的产品 · RGB灯”。\n- 修复检查更新返回后误弹“写入失败，请重试”。\n- 写忙时自动重试，不再立即提示。\n- 开发者模式长按版本号改为 10 秒。\n- 保留 OTA Log、force、真实版本号、日志折叠。\n\n详细说明：[v1.1.4.md](docs/changelogs/v1.1.4.md)\n\n---",
+  "versionCode": 16,
+  "versionName": "1.1.5",
+  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.5/AuroraLight-v1.1.5.apk",
+  "sha256": "7de5b8fc664c89b75cdc95cece7ace29d5e8e70f29724aa743d585a09d6868b7",
+  "changelog": "### 重构\n\n- 按新协议重写控制帧：`11 00 模式 长度 数据... 0A`。\n- 产品广播 FF01/AA01 识别，连接后读 FF02 校验。\n- 两页 UI `光屿 / 我的`，新增 LS 幻彩灯控制子页。\n- 模式重构：自检、跑马、呼吸、火焰、音乐律动、常亮。\n- 本地音乐 + Visualizer 鼓点 + 单次发码。\n- App 名称 LS、启动动画、白色主题。\n- 保留原包名、签名、自动更新和 OTA。\n\n详细说明：[v1.1.5.md](docs/changelogs/v1.1.5.md)\n\n---",
   "force": true
 }
