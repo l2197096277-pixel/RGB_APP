@@ -51,6 +51,7 @@
                 android:background="@drawable/bg_ls_dot">
 
                 <TextView
+                    android:id="@+id/connectIcon"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -67,6 +68,7 @@
                 android:orientation="vertical">
 
                 <TextView
+                    android:id="@+id/connectTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
@@ -75,6 +77,7 @@
                     android:textSize="17sp" />
 
                 <TextView
+                    android:id="@+id/connectSubtitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"

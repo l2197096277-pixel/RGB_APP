@@ -27,17 +27,16 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <ImageView
                     android:id="@+id/backControl"
                     android:layout_width="42dp"
                     android:layout_height="42dp"
                     android:background="@drawable/bg_ls_pill"
                     android:clickable="true"
+                    android:contentDescription="返回"
                     android:focusable="true"
-                    android:gravity="center"
-                    android:text="‹"
-                    android:textColor="@color/ls_text"
-                    android:textSize="28sp" />
+                    android:padding="10dp"
+                    android:src="@drawable/ic_ls_back" />
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -270,13 +269,27 @@
                     android:textColor="@color/ls_text"
                     android:textSize="13sp" />
 
-                <LinearLayout
-                    android:id="@+id/colorRow"
+                <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal" />
+                    android:overScrollMode="never"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/colorRow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal" />
+                </HorizontalScrollView>
+
+                <com.aurora.light.ui.FlamePreviewView
+                    android:id="@+id/flamePreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="142dp"
+                    android:layout_marginTop="10dp"
+                    android:visibility="gone" />
             </LinearLayout>
 
             <LinearLayout

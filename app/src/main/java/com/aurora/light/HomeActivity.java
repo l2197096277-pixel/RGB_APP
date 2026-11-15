@@ -43,6 +43,9 @@ import android.widget.Toast;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import com.aurora.light.ui.FlamePreviewView;
+import com.aurora.light.ui.MusicBarsView;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -87,6 +90,9 @@ public class HomeActivity extends Activity
     private LinearLayout myDevicesList;
     private TextView myDevicesEmpty;
     private View connectCard;
+    private TextView connectIcon;
+    private TextView connectTitle;
+    private TextView connectSubtitle;
 
     private TextView versionLabel;
     private TextView currentFirmware;
@@ -99,7 +105,7 @@ public class HomeActivity extends Activity
     private boolean changelogExpanded;
     private final Handler devLongPress = new Handler(Looper.getMainLooper());
 
-    private TextView backControl;
+    private View backControl;
     private TextView controlStatus;
     private Switch powerSwitch;
     private TextView powerHint;
@@ -111,13 +117,14 @@ public class HomeActivity extends Activity
     private TextView modeSteady;
     private View colorSection;
     private LinearLayout colorRow;
+    private FlamePreviewView flamePreview;
     private View countSection;
     private EditText countInput;
     private View brightnessSection;
     private SeekBar brightnessSeek;
     private TextView brightnessValue;
 
-    private TextView backMusic;
+    private View backMusic;
     private TextView currentMusic;
     private TextView musicState;
     private TextView musicPlay;
@@ -131,12 +138,14 @@ public class HomeActivity extends Activity
     private LinearLayout musicList;
     private TextView musicEmpty;
     private View exitMusicMode;
+    private MusicBarsView musicBars;
 
     private boolean powerOn;
     private int activeMode = MODE_NONE;
     private int selectedColor = 1;
     private int steadyCount = 1;
     private int brightnessPercent = 100;
+    private long lastBrightnessSend;
     private boolean autoConnectPending;
     private boolean returningFromFota;
     private boolean suppressDisconnectToast;
@@ -150,6 +159,7 @@ public class HomeActivity extends Activity
     private boolean reactive;
     private float sensitivity = 1.6f;
     private double bassAverage;
+    private double previousBass;
     private long lastBeatAt;
     private int lastBeatColor;
 
@@ -214,6 +224,9 @@ public class HomeActivity extends Activity
         myDevicesList = findViewById(R.id.myDevicesList);
         myDevicesEmpty = findViewById(R.id.myDevicesEmpty);
         connectCard = findViewById(R.id.connectCard);
+        connectIcon = findViewById(R.id.connectIcon);
+        connectTitle = findViewById(R.id.connectTitle);
+        connectSubtitle = findViewById(R.id.connectSubtitle);
 
         versionLabel = findViewById(R.id.versionLabel);
         currentFirmware = findViewById(R.id.currentFirmware);
@@ -235,6 +248,7 @@ public class HomeActivity extends Activity
         modeSteady = findViewById(R.id.modeSteady);
         colorSection = findViewById(R.id.colorSection);
         colorRow = findViewById(R.id.colorRow);
+        flamePreview = findViewById(R.id.flamePreview);
         countSection = findViewById(R.id.countSection);
         countInput = findViewById(R.id.countInput);
         brightnessSection = findViewById(R.id.brightnessSection);
@@ -255,12 +269,24 @@ public class HomeActivity extends Activity
         musicList = findViewById(R.id.musicList);
         musicEmpty = findViewById(R.id.musicEmpty);
         exitMusicMode = findViewById(R.id.exitMusicMode);
+        musicBars = findViewById(R.id.musicBars);
     }
 
     private void initHome() {
         findViewById(R.id.navHome).setOnClickListener(v -> showHomePage());
         findViewById(R.id.navProfile).setOnClickListener(v -> showProfilePage());
-        connectCard.setOnClickListener(v -> showScan());
+        connectCard.setOnClickListener(v -> {
+            if (ble != null && ble.isReady()) {
+                ble.disconnect();
+                refreshConnectionCard();
+                renderDevices();
+                showHomePage();
+                toast("已断开连接");
+            } else {
+                showScan();
+            }
+        });
+        refreshConnectionCard();
     }
 
     private void initProfile() {
@@ -376,10 +402,22 @@ public class HomeActivity extends Activity
                 }
                 brightnessPercent = progress;
                 brightnessValue.setText(brightnessPercent + "%");
+                if (fromUser && powerOn && activeMode == MODE_STEADY
+                        && ble != null && ble.isReady()) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastBrightnessSend >= 70L) {
+                        lastBrightnessSend = now;
+                        ble.sendReactive(AuroraProtocol.lsSteady(true, steadyCount,
+                                selectedColor, protocolBrightness(brightnessPercent)));
+                    }
+                }
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) {
-                sendCurrentMode();
+                if (powerOn && activeMode == MODE_STEADY && ble != null && ble.isReady()) {
+                    ble.send(AuroraProtocol.lsSteady(true, steadyCount,
+                            selectedColor, protocolBrightness(brightnessPercent)));
+                }
             }
         });
         updateControlUi();
@@ -389,24 +427,39 @@ public class HomeActivity extends Activity
         colorRow.removeAllViews();
         for (int i = 0; i < AuroraProtocol.LS_COLOR_RGB.length; i++) {
             final int colorIndex = i + 1;
+            LinearLayout item = new LinearLayout(this);
+            item.setOrientation(LinearLayout.VERTICAL);
+            item.setGravity(Gravity.CENTER);
+            LinearLayout.LayoutParams itemParams = new LinearLayout.LayoutParams(dp(42), -2);
+            itemParams.setMarginEnd(dp(6));
+            item.setLayoutParams(itemParams);
+            item.setOnClickListener(v -> selectColor(colorIndex));
+
             TextView dot = new TextView(this);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(34), dp(34));
-            lp.setMarginEnd(dp(5));
-            dot.setLayoutParams(lp);
+            LinearLayout.LayoutParams dotParams = new LinearLayout.LayoutParams(dp(32), dp(32));
+            dot.setLayoutParams(dotParams);
             dot.setGravity(Gravity.CENTER);
-            dot.setText(String.valueOf(colorIndex));
-            dot.setTextSize(8);
-            dot.setTextColor(colorIndex == 1 ? Color.parseColor("#69788C") : Color.WHITE);
+            dot.setTextSize(9);
             dot.setTypeface(Typeface.DEFAULT_BOLD);
-            dot.setOnClickListener(v -> selectColor(colorIndex));
-            colorRow.addView(dot);
+
+            TextView label = new TextView(this);
+            label.setText(AuroraProtocol.LS_COLOR_NAMES[i]);
+            label.setTextColor(getColor(R.color.ls_secondary));
+            label.setTextSize(9);
+            label.setGravity(Gravity.CENTER);
+            label.setPadding(0, dp(4), 0, 0);
+
+            item.addView(dot);
+            item.addView(label);
+            colorRow.addView(item);
         }
         updateColorRow();
     }
 
     private void updateColorRow() {
         for (int i = 0; i < colorRow.getChildCount(); i++) {
-            TextView dot = (TextView) colorRow.getChildAt(i);
+            LinearLayout item = (LinearLayout) colorRow.getChildAt(i);
+            TextView dot = (TextView) item.getChildAt(0);
             int index = i + 1;
             GradientDrawable bg = new GradientDrawable();
             bg.setShape(GradientDrawable.OVAL);
@@ -414,20 +467,24 @@ public class HomeActivity extends Activity
             bg.setStroke(index == selectedColor ? dp(3) : dp(1),
                     index == selectedColor ? getColor(R.color.ls_text) : getColor(R.color.ls_stroke));
             dot.setBackground(bg);
-            dot.setTextColor(index == 1 ? Color.parseColor("#69788C") : Color.WHITE);
+            dot.setText(index == selectedColor ? "✓" : "");
+            dot.setTextColor(index == 1 ? getColor(R.color.ls_text) : Color.WHITE);
         }
     }
 
     private void selectColor(int colorIndex) {
         selectedColor = colorIndex;
         updateColorRow();
+        if (flamePreview != null && activeMode == MODE_FLAME) {
+            flamePreview.setFlameColor(AuroraProtocol.LS_COLOR_RGB[selectedColor - 1]);
+        }
         if (powerOn && (activeMode == MODE_FLAME || activeMode == MODE_STEADY)) {
             sendCurrentMode();
         }
     }
 
     private void initMusic() {
-        backMusic.setOnClickListener(v -> showControlFromMusic());
+        backMusic.setOnClickListener(v -> exitMusicMode());
         musicPlay.setOnClickListener(v -> togglePlay());
         musicPrev.setOnClickListener(v -> playPrevious());
         musicNext.setOnClickListener(v -> playNext());
@@ -499,6 +556,23 @@ public class HomeActivity extends Activity
         bottomNav.setVisibility(View.VISIBLE);
         updateNav(0);
         loadDevices();
+        refreshConnectionCard();
+    }
+
+    private void refreshConnectionCard() {
+        if (connectTitle == null) return;
+        boolean connected = ble != null && ble.isReady();
+        if (connected) {
+            connectIcon.setText("✓");
+            connectIcon.setTextColor(Color.WHITE);
+            connectTitle.setText("LS 幻彩灯");
+            connectSubtitle.setText("已连接 · 点击断开");
+        } else {
+            connectIcon.setText("+");
+            connectIcon.setTextColor(getColor(R.color.ls_accent));
+            connectTitle.setText("连接设备");
+            connectSubtitle.setText("扫描附近的 LS 幻彩灯");
+        }
     }
 
     private void showProfilePage() {
@@ -643,6 +717,11 @@ public class HomeActivity extends Activity
         }
         boolean showColor = powerOn && (activeMode == MODE_FLAME || activeMode == MODE_STEADY);
         colorSection.setVisibility(showColor ? View.VISIBLE : View.GONE);
+        flamePreview.setVisibility(powerOn && activeMode == MODE_FLAME
+                ? View.VISIBLE : View.GONE);
+        if (flamePreview.getVisibility() == View.VISIBLE) {
+            flamePreview.setFlameColor(AuroraProtocol.LS_COLOR_RGB[selectedColor - 1]);
+        }
         boolean showSteady = powerOn && activeMode == MODE_STEADY;
         countSection.setVisibility(showSteady ? View.VISIBLE : View.GONE);
         brightnessSection.setVisibility(showSteady ? View.VISIBLE : View.GONE);
@@ -672,6 +751,7 @@ public class HomeActivity extends Activity
         }
         suppressConnectedToast = false;
         suppressDisconnectToast = false;
+        refreshConnectionCard();
         showControlPage();
         updateFirmwareUi();
         if (scanSheet != null && scanSheet.isShowing()) scanSheet.onConnected();
@@ -688,6 +768,7 @@ public class HomeActivity extends Activity
         if (!silent) {
             toast("蓝牙已断开");
         }
+        refreshConnectionCard();
         showHomePage();
     }
 
@@ -698,6 +779,7 @@ public class HomeActivity extends Activity
             return;
         }
         controlStatus.setText("未连接");
+        refreshConnectionCard();
         showHomePage();
         if (scanSheet != null && scanSheet.isShowing()) {
             scanSheet.onConnectFailed(message);
@@ -754,13 +836,24 @@ public class HomeActivity extends Activity
             }
         } catch (Exception ignored) {
         }
+        // 兼容旧版本可能写入的重复记录。
+        for (int i = deviceRecords.size() - 1; i >= 0; i--) {
+            for (int j = 0; j < i; j++) {
+                if (deviceRecords.get(i).address.equalsIgnoreCase(deviceRecords.get(j).address)) {
+                    deviceRecords.remove(i);
+                    break;
+                }
+            }
+        }
+        saveDeviceJson();
         renderDevices();
     }
 
     private void saveDevice(String address, String name) {
         if (TextUtils.isEmpty(address)) return;
         for (DeviceRecord d : deviceRecords) {
-            if (address.equals(d.address)) {
+            if (address.equalsIgnoreCase(d.address)) {
+                d.address = address;
                 d.name = name;
                 saveDeviceJson();
                 renderDevices();
@@ -816,9 +909,36 @@ public class HomeActivity extends Activity
             addr.setTextColor(getColor(R.color.ls_tertiary));
             addr.setTextSize(9);
             addr.setPadding(0, dp(3), 0, 0);
+            boolean current = ble != null && ble.isReady()
+                    && d.address.equalsIgnoreCase(ble.currentAddress());
+            TextView state = new TextView(this);
+            state.setText(current ? "已连接" : "未连接");
+            state.setTextColor(getColor(current ? R.color.ls_mint : R.color.ls_tertiary));
+            state.setTextSize(9);
+            state.setPadding(0, dp(4), 0, 0);
             info.addView(name);
             info.addView(addr);
+            info.addView(state);
             row.addView(info);
+
+            TextView action = new TextView(this);
+            action.setText(current ? "断开" : "连接");
+            action.setTextColor(getColor(current ? R.color.ls_danger : R.color.ls_accent));
+            action.setTextSize(9);
+            action.setPadding(dp(8), dp(6), dp(8), dp(6));
+            action.setOnClickListener(v -> {
+                if (current) {
+                    ble.disconnect();
+                    refreshConnectionCard();
+                    renderDevices();
+                    toast("已断开连接");
+                } else {
+                    if (scanSheet != null && scanSheet.isShowing()) scanSheet.dismiss();
+                    toast("正在连接…");
+                    ble.connectAddress(d.address, d.name);
+                }
+            });
+            row.addView(action);
 
             TextView delete = new TextView(this);
             delete.setText("删除");
@@ -850,6 +970,7 @@ public class HomeActivity extends Activity
         }
         if (ble != null && ble.isReady() && d.address.equalsIgnoreCase(ble.currentAddress())) {
             ble.disconnect();
+            refreshConnectionCard();
         }
         renderDevices();
     }
@@ -1068,7 +1189,7 @@ public class HomeActivity extends Activity
                 musicPlay.setText("暂停");
                 musicState.setText(reactive ? "播放中 · 律动中" : "播放中");
                 currentMusic.setText(track.name);
-                if (reactive) ensureVisualizer();
+                if (hasAudioPermission()) ensureVisualizer();
             });
             player.setOnCompletionListener(mp -> playNext());
             player.setOnErrorListener((mp, what, extra) -> {
@@ -1118,15 +1239,17 @@ public class HomeActivity extends Activity
     }
 
     private void ensureVisualizer() {
-        if (!reactive || player == null) return;
+        if (player == null) return;
         if (!hasAudioPermission()) {
-            requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, REQ_AUDIO);
             return;
         }
         releaseVisualizer();
         try {
             visualizer = new Visualizer(player.getAudioSessionId());
             visualizer.setCaptureSize(1024);
+            bassAverage = 0;
+            previousBass = 0;
+            lastBeatAt = 0;
             visualizer.setDataCaptureListener(new Visualizer.OnDataCaptureListener() {
                 @Override public void onWaveFormDataCapture(Visualizer visualizer, byte[] waveform, int samplingRate) { }
                 @Override public void onFftDataCapture(Visualizer visualizer, byte[] fft, int samplingRate) {
@@ -1142,19 +1265,43 @@ public class HomeActivity extends Activity
     }
 
     private void onFft(byte[] fft) {
-        if (!reactive || fft == null || fft.length < 8) return;
+        if (fft == null || fft.length < 8) return;
         double bass = 0;
-        int limit = Math.min(fft.length, 40);
+        int limit = Math.min(fft.length, 48);
+        float[] bars = new float[28];
+        float maxBar = 0.01f;
         for (int i = 2; i + 1 < limit; i += 2) {
             double re = fft[i];
             double im = fft[i + 1];
-            bass += Math.sqrt(re * re + im * im);
+            double magnitude = Math.sqrt(re * re + im * im);
+            bass += magnitude;
+            if (i / 2 - 1 < bars.length) {
+                int index = i / 2 - 1;
+                bars[index] = (float) magnitude;
+                maxBar = Math.max(maxBar, bars[index]);
+            }
         }
-        bassAverage = bassAverage * 0.92 + bass * 0.08;
+        if (musicBars != null) {
+            for (int i = 0; i < bars.length; i++) bars[i] /= maxBar;
+            musicBars.setLevels(bars);
+        }
         long now = System.currentTimeMillis();
-        if (bass > bassAverage * sensitivity && now - lastBeatAt > 150L) {
+        if (bassAverage <= 0.01) {
+            bassAverage = bass;
+            previousBass = bass;
+            return;
+        }
+        // 用较慢的基线 + 瞬时上升量判断鼓点，避免开头几下之后阈值被抬高。
+        double threshold = bassAverage * (0.92 + sensitivity * 0.14);
+        boolean rising = bass > previousBass * 1.03 || bass > bassAverage * 1.10;
+        if (bass > threshold && rising && now - lastBeatAt > 150L) {
             lastBeatAt = now;
-            handler.post(this::sendBeatFrame);
+            if (reactive) handler.post(this::sendBeatFrame);
+        }
+        previousBass = bass;
+        bassAverage = bassAverage * 0.97 + bass * 0.03;
+        if (now - lastBeatAt > 3000L) {
+            bassAverage = bass;
         }
     }
 
@@ -1199,6 +1346,7 @@ public class HomeActivity extends Activity
         stopPlayerOnly();
         currentTrackIndex = -1;
         if (musicState != null) musicState.setText("鼓点律动已关闭");
+        if (musicBars != null) musicBars.clear();
     }
 
     private void exitMusicMode() {
@@ -1358,7 +1506,7 @@ public class HomeActivity extends Activity
     @Override
     public void onBackPressed() {
         if (musicPage.getVisibility() == View.VISIBLE) {
-            showControlFromMusic();
+            exitMusicMode();
         } else if (controlPage.getVisibility() == View.VISIBLE) {
             exitControl();
         } else if (profilePage.getVisibility() == View.VISIBLE) {

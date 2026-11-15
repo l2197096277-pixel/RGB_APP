@@ -55,7 +55,7 @@
                 android:layout_marginTop="5dp"
                 android:fontFamily="sans-serif-medium"
                 android:longClickable="false"
-                android:text="v1.1.5"
+                android:text="v1.1.6"
                 android:textColor="@color/ls_accent"
                 android:textSize="26sp" />
 
@@ -167,7 +167,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:fontFamily="sans-serif-medium"
-                        android:text="v1.1.5 · 2026-11-15"
+                        android:text="v1.1.6 · 2026-11-15"
                         android:textColor="@color/ls_accent"
                         android:textSize="12sp" />
 
