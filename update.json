@@ -1,8 +1,8 @@
 {
-  "versionCode": 20,
-  "versionName": "1.1.9",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.9/AuroraLight-v1.1.9.apk",
-  "sha256": "75acc65a77ea814e2d302b468de8333aedd87fdedf5edc8e7ccd5952cb685039",
-  "changelog": "### 修复\n\n- 焰火高度铺满预览，去掉上方空白。\n- OTA 拒绝升级后不再误报升级失败。\n- 连接成功后保持当前页面，只有点击设备才进入控制页。\n\n详细说明：[v1.1.9.md](docs/changelogs/v1.1.9.md)\n\n---",
+  "versionCode": 21,
+  "versionName": "1.2.0",
+  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.2.0/AuroraLight-v1.2.0.apk",
+  "sha256": "0af2c0d746165edec0b8ad78bb33e763cfea48c6206bcd96512a05dfd30d5b32",
+  "changelog": "### 新协议\n\n- 跑马灯、呼吸灯增加颜色字节。\n- 新增实际 RGB 灯珠数量设置，开灯前必须设置。\n- 我的设备同名去重，地址变化自动更新。\n- 历史设备直连失败自动扫描重连。\n\n详细说明：[v1.2.0.md](docs/changelogs/v1.2.0.md)\n\n---",
   "force": true
 }
