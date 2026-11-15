@@ -301,6 +301,15 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     }
 
     private void fail(String message) {
+        if (userDeclined || !userConfirmed) {
+            busy = false;
+            success = true;
+            main.post(() -> {
+                statusView.setText("已取消升级");
+                showAction("返回");
+            });
+            return;
+        }
         busy = false;
         success = false;
         main.post(() -> {
@@ -433,6 +442,10 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     public void onError(String message) {
         appendLog("BLE 错误：" + message);
         if (userDeclined) {
+            return;
+        }
+        if (promptShown && !userConfirmed) {
+            // 还没确认升级时，BLE 断开/错误不能覆盖“发现新固件”提示，更不能显示升级失败。
             return;
         }
         if (busy) {

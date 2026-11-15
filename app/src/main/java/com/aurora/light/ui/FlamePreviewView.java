@@ -24,6 +24,8 @@ public class FlamePreviewView extends View {
     private final int[] heat = new int[COLS * ROWS];
     private final int[] palette = new int[MAX_HEAT + 1];
     private final int[] pixels = new int[COLS * ROWS];
+    private final android.graphics.Rect srcRect = new android.graphics.Rect();
+    private final android.graphics.Rect dstRect = new android.graphics.Rect();
     private Bitmap bitmap;
     private int flameColor = 0xFFFF9500;
     private boolean seeded;
@@ -108,8 +110,26 @@ public class FlamePreviewView extends View {
             pixels[i] = palette[Math.min(MAX_HEAT, Math.max(0, heat[i]))];
         }
         bitmap.setPixels(pixels, 0, COLS, 0, 0, COLS, ROWS);
-        canvas.drawBitmap(bitmap, null,
-                new android.graphics.Rect(0, 0, getWidth(), getHeight()), paint);
+
+        // 火苗通常只占下半部分，裁掉顶部空行后铺满预览高度。
+        int top = ROWS - 1;
+        for (int y = 0; y < ROWS; y++) {
+            boolean hasFire = false;
+            for (int x = 0; x < COLS; x++) {
+                if (heat[y * COLS + x] > 1) {
+                    hasFire = true;
+                    break;
+                }
+            }
+            if (hasFire) {
+                top = y;
+                break;
+            }
+        }
+        if (top >= ROWS - 2) top = ROWS - 2;
+        srcRect.set(0, top, COLS, ROWS);
+        dstRect.set(0, 0, getWidth(), getHeight());
+        canvas.drawBitmap(bitmap, srcRect, dstRect, paint);
         postInvalidateDelayed(55L);
     }
 

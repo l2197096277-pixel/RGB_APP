@@ -160,6 +160,7 @@ public class HomeActivity extends Activity
     private boolean suppressDisconnectToast;
     private boolean suppressConnectedToast;
     private boolean openControlOnReady;
+    private boolean suppressBleErrorAfterFota;
 
     private final List<DeviceRecord> deviceRecords = new ArrayList<>();
     private final List<MusicTrack> musicTracks = new ArrayList<>();
@@ -893,13 +894,16 @@ public class HomeActivity extends Activity
         }
         suppressConnectedToast = false;
         suppressDisconnectToast = false;
+        suppressBleErrorAfterFota = false;
         refreshConnectionCard();
         if (openControlOnReady) {
             openControlOnReady = false;
             showControlPage();
         } else {
             openControlOnReady = false;
-            showHomePage();
+            // 连接成功只更新状态，不强制跳回主页；用户当前在哪个页面就保持。
+            refreshConnectionCard();
+            loadDevices();
         }
         updateFirmwareUi();
         if (scanSheet != null && scanSheet.isShowing()) scanSheet.onConnected();
@@ -929,9 +933,14 @@ public class HomeActivity extends Activity
             return;
         }
         controlStatus.setText("未连接");
+        if (suppressBleErrorAfterFota) {
+            suppressBleErrorAfterFota = false;
+            openControlOnReady = false;
+            refreshConnectionCard();
+            return;
+        }
         openControlOnReady = false;
         refreshConnectionCard();
-        showHomePage();
         if (scanSheet != null && scanSheet.isShowing()) {
             scanSheet.onConnectFailed(message);
         }
@@ -1143,6 +1152,7 @@ public class HomeActivity extends Activity
         returningFromFota = true;
         suppressDisconnectToast = true;
         suppressConnectedToast = true;
+        suppressBleErrorAfterFota = true;
         ble.disconnect();
         Intent intent = new Intent(this, FotaActivity.class);
         intent.putExtra(FotaActivity.EXTRA_ADDRESS, address);

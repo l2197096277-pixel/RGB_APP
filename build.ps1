@@ -7,8 +7,8 @@
 param(
     [string]$Sdk = (Join-Path $PSScriptRoot '..\.buildtools\android-sdk'),
     [string]$Jdk = '',
-    [string]$VersionName = '1.1.8',
-    [int]$VersionCode = 19,
+    [string]$VersionName = '1.1.9',
+    [int]$VersionCode = 20,
     [string]$StorePassword = 'AuroraLight2026!',
     [string]$KeyAlias = 'aurora',
     [string]$Python = ''
