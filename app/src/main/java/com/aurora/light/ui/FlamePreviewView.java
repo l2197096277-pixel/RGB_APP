@@ -1,33 +1,32 @@
 package com.aurora.light.ui;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.RadialGradient;
-import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.View;
 
 import java.util.Random;
 
-/** 焰火颜色预览：向上的、不规则的火苗/火星动画。 */
+/**
+ * 焰火预览：用 fire field 算法生成向上、无规则的火焰，而不是横向波浪。
+ */
 public class FlamePreviewView extends View {
 
-    private static final int PARTICLES = 52;
+    private static final int COLS = 64;
+    private static final int ROWS = 64;
+    private static final int MAX_HEAT = 36;
 
-    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint glow = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
     private final Random random = new Random();
-    private final float[] x = new float[PARTICLES];
-    private final float[] y = new float[PARTICLES];
-    private final float[] speed = new float[PARTICLES];
-    private final float[] size = new float[PARTICLES];
-    private final float[] life = new float[PARTICLES];
-    private final float[] drift = new float[PARTICLES];
+    private final int[] heat = new int[COLS * ROWS];
+    private final int[] palette = new int[MAX_HEAT + 1];
+    private final int[] pixels = new int[COLS * ROWS];
+    private Bitmap bitmap;
     private int flameColor = 0xFFFF9500;
-    private float time;
-    private boolean ready;
+    private boolean seeded;
 
     public FlamePreviewView(Context context) {
         super(context);
@@ -41,76 +40,84 @@ public class FlamePreviewView extends View {
 
     private void init() {
         setLayerType(LAYER_TYPE_SOFTWARE, null);
-        paint.setStyle(Paint.Style.FILL);
-        glow.setStyle(Paint.Style.FILL);
+        bitmap = Bitmap.createBitmap(COLS, ROWS, Bitmap.Config.ARGB_8888);
+        buildPalette();
+        paint.setFilterBitmap(true);
     }
 
     public void setFlameColor(int color) {
         this.flameColor = color;
+        buildPalette();
         invalidate();
     }
 
-    private void seedParticles(int w, int h) {
-        for (int i = 0; i < PARTICLES; i++) {
-            resetParticle(i, w, h, true);
+    private void buildPalette() {
+        for (int i = 0; i <= MAX_HEAT; i++) {
+            float t = i / (float) MAX_HEAT;
+            if (t <= 0.03f) {
+                palette[i] = Color.TRANSPARENT;
+                continue;
+            }
+            // 低处深色/半透明，高处亮色，整体使用当前选择的颜色。
+            int warm = blend(flameColor, 0xFFFFD27A, Math.max(0f, 0.55f - t));
+            int hot = blend(warm, 0xFFFFFFFF, Math.max(0f, t - 0.55f) * 1.7f);
+            int alpha = (int) (255 * Math.min(1f, t * 2.6f));
+            palette[i] = (hot & 0x00FFFFFF) | (alpha << 24);
         }
-        ready = true;
     }
 
-    private void resetParticle(int index, int w, int h, boolean initial) {
-        x[index] = w * (0.24f + random.nextFloat() * 0.52f);
-        y[index] = h * (initial ? random.nextFloat() : (0.82f + random.nextFloat() * 0.16f));
-        speed[index] = h * (0.010f + random.nextFloat() * 0.016f);
-        size[index] = h * (0.025f + random.nextFloat() * 0.055f);
-        life[index] = 0.55f + random.nextFloat() * 0.45f;
-        drift[index] = w * (0.006f + random.nextFloat() * 0.012f);
+    private void seed() {
+        for (int i = 0; i < heat.length; i++) heat[i] = 0;
+        for (int x = 0; x < COLS; x++) {
+            heat[(ROWS - 1) * COLS + x] = MAX_HEAT;
+            if (random.nextBoolean()) heat[(ROWS - 2) * COLS + x] = MAX_HEAT - 2;
+        }
+        seeded = true;
     }
 
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        seedParticles(w, h);
+    private void updateFire() {
+        for (int y = 1; y < ROWS; y++) {
+            for (int x = 0; x < COLS; x++) {
+                int src = y * COLS + x;
+                int value = heat[src];
+                if (value == 0) {
+                    heat[src - COLS] = 0;
+                    continue;
+                }
+                int decay = random.nextInt(4);
+                int dstX = x + random.nextInt(3) - 1;
+                if (dstX < 0) dstX = 0;
+                if (dstX >= COLS) dstX = COLS - 1;
+                int dst = (y - 1) * COLS + dstX;
+                heat[dst] = Math.max(0, value - decay);
+            }
+        }
+        for (int x = 0; x < COLS; x++) {
+            heat[(ROWS - 1) * COLS + x] = MAX_HEAT;
+            if (random.nextBoolean()) heat[(ROWS - 2) * COLS + x] = MAX_HEAT - 1;
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        int w = getWidth();
-        int h = getHeight();
-        if (w <= 0 || h <= 0) return;
-        if (!ready) seedParticles(w, h);
-
-        int base = flameColor;
-        int glowColor = (base & 0x00FFFFFF) | 0x22000000;
-        paint.setShader(new RadialGradient(w * 0.5f, h * 1.02f, h * 0.86f,
-                new int[]{glowColor, Color.TRANSPARENT}, null, Shader.TileMode.CLAMP));
-        canvas.drawRect(0, 0, w, h, paint);
-        paint.setShader(null);
-
-        time += 0.12f;
-        for (int i = 0; i < PARTICLES; i++) {
-            y[i] -= speed[i];
-            x[i] += (float) Math.sin(time * 0.9f + i * 1.7f) * drift[i] * 0.16f;
-            life[i] -= 0.012f;
-            if (life[i] <= 0f || y[i] < -size[i]) {
-                resetParticle(i, w, h, false);
-            }
-            float alpha = Math.max(0f, Math.min(1f, life[i]));
-            float radius = size[i] * (0.55f + alpha * 0.8f);
-            int color = blend(base, 0xFFFFFFFF, 0.12f + 0.45f * alpha);
-            paint.setColor((color & 0x00FFFFFF) | (int) (alpha * 220) << 24);
-            canvas.drawCircle(x[i], y[i], radius, paint);
-            glow.setColor((base & 0x00FFFFFF) | (int) (alpha * 52) << 24);
-            canvas.drawCircle(x[i], y[i], radius * 1.8f, glow);
+        if (getWidth() <= 0 || getHeight() <= 0) return;
+        if (!seeded) seed();
+        updateFire();
+        for (int i = 0; i < heat.length; i++) {
+            pixels[i] = palette[Math.min(MAX_HEAT, Math.max(0, heat[i]))];
         }
-        postInvalidateDelayed(33L);
+        bitmap.setPixels(pixels, 0, COLS, 0, 0, COLS, ROWS);
+        canvas.drawBitmap(bitmap, null,
+                new android.graphics.Rect(0, 0, getWidth(), getHeight()), paint);
+        postInvalidateDelayed(55L);
     }
 
     private static int blend(int from, int to, float f) {
-        int a = (int) ((from >>> 24) + (((to >>> 24) - (from >>> 24)) * f));
+        f = Math.max(0f, Math.min(1f, f));
         int r = (int) (((from >> 16) & 0xFF) + ((((to >> 16) & 0xFF) - ((from >> 16) & 0xFF)) * f));
         int g = (int) (((from >> 8) & 0xFF) + ((((to >> 8) & 0xFF) - ((from >> 8) & 0xFF)) * f));
         int b = (int) ((from & 0xFF) + (((to & 0xFF) - (from & 0xFF)) * f));
-        return (a << 24) | (r << 16) | (g << 8) | b;
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 }

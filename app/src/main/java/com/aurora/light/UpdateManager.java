@@ -141,26 +141,42 @@ public final class UpdateManager {
     }
 
     private static void downloadAndInstall(Activity activity, UpdateInfo info) {
-        ProgressDialog progress = new ProgressDialog(activity);
-        progress.setTitle("正在下载更新");
-        progress.setMessage("请保持网络连接…");
-        progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progress.setCancelable(false);
-        progress.setMax(100);
-        progress.show();
+        final Dialog downloadDialog = new Dialog(activity,
+                android.R.style.Theme_Translucent_NoTitleBar);
+        downloadDialog.setContentView(R.layout.dialog_download);
+        downloadDialog.setCancelable(false);
+        downloadDialog.setCanceledOnTouchOutside(false);
+        Window window = downloadDialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.dimAmount = 0.58f;
+            params.gravity = android.view.Gravity.CENTER;
+            window.setAttributes(params);
+        }
+        final TextView percent = downloadDialog.findViewById(R.id.downloadPercent);
+        final TextView hint = downloadDialog.findViewById(R.id.downloadHint);
+        final com.aurora.light.ui.DownloadPulseView pulse =
+                downloadDialog.findViewById(R.id.downloadPulse);
+        downloadDialog.show();
+        if (window != null) {
+            window.setLayout((int) (activity.getResources().getDisplayMetrics().widthPixels * 0.86f),
+                    WindowManager.LayoutParams.WRAP_CONTENT);
+        }
 
         new Thread(() -> {
             File apk = new File(activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
                     "AuroraLight-update.apk");
             try {
-                download(info.apkUrl, apk, progress, activity);
+                download(info.apkUrl, apk, downloadDialog, percent, pulse, activity);
                 String actual = sha256(apk);
                 if (!TextUtils.isEmpty(info.sha256)
                         && !actual.equalsIgnoreCase(info.sha256.trim())) {
                     throw new IllegalStateException("APK 校验失败，请重试");
                 }
                 activity.runOnUiThread(() -> {
-                    progress.dismiss();
+                    downloadDialog.dismiss();
                     pendingApk = apk;
                     installOrRequestPermission(activity, apk);
                 });
@@ -170,7 +186,7 @@ public final class UpdateManager {
                     apk.delete();
                 }
                 activity.runOnUiThread(() -> {
-                    progress.dismiss();
+                    downloadDialog.dismiss();
                     Toast.makeText(activity,
                             e.getMessage() == null ? "更新下载失败" : e.getMessage(),
                             Toast.LENGTH_LONG).show();
@@ -179,7 +195,8 @@ public final class UpdateManager {
         }, "aurora-update-download").start();
     }
 
-    private static void download(String url, File target, ProgressDialog progress,
+    private static void download(String url, File target, Dialog dialog,
+                                 TextView percent, com.aurora.light.ui.DownloadPulseView pulse,
                                  Activity activity) throws Exception {
         HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
         connection.setConnectTimeout(10000);
@@ -206,7 +223,10 @@ public final class UpdateManager {
                     done += read;
                     if (total > 0) {
                         int p = (int) (done * 100 / total);
-                        activity.runOnUiThread(() -> progress.setProgress(p));
+                        activity.runOnUiThread(() -> {
+                            percent.setText(p + "%");
+                            pulse.setProgress(p);
+                        });
                     }
                 }
             }

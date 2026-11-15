@@ -2,7 +2,7 @@ package com.aurora.light;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.AlertDialog;
+import android.app.Dialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.ClipData;
@@ -13,6 +13,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.location.LocationManager;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
@@ -48,9 +49,11 @@ import com.aurora.light.ui.FlamePreviewView;
 import com.aurora.light.ui.MusicBarsView;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.text.SimpleDateFormat;
 
 /**
  * LS 两页主界面 + LS 幻彩灯控制子页 + 音乐律动子页。
@@ -102,6 +105,11 @@ public class HomeActivity extends Activity
     private TextView changelogCurrentVersion;
     private TextView changelogToggle;
     private LinearLayout changelogHistoryList;
+    private View devLogRow;
+    private TextView devLogCount;
+    private final StringBuilder devLogBuffer = new StringBuilder();
+    private Dialog devLogDialog;
+    private TextView devLogText;
     private boolean developerMode;
     private boolean changelogExpanded;
     private final Handler devLongPress = new Handler(Looper.getMainLooper());
@@ -151,6 +159,7 @@ public class HomeActivity extends Activity
     private boolean returningFromFota;
     private boolean suppressDisconnectToast;
     private boolean suppressConnectedToast;
+    private boolean openControlOnReady;
 
     private final List<DeviceRecord> deviceRecords = new ArrayList<>();
     private final List<MusicTrack> musicTracks = new ArrayList<>();
@@ -236,6 +245,8 @@ public class HomeActivity extends Activity
         changelogCurrentVersion = findViewById(R.id.changelogCurrentVersion);
         changelogToggle = findViewById(R.id.changelogToggle);
         changelogHistoryList = findViewById(R.id.changelogHistoryList);
+        devLogRow = findViewById(R.id.devLogRow);
+        devLogCount = findViewById(R.id.devLogCount);
 
         backControl = findViewById(R.id.backControl);
         controlStatus = findViewById(R.id.controlStatus);
@@ -300,9 +311,15 @@ public class HomeActivity extends Activity
                 devLongPress.postDelayed(() -> {
                     v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
                     developerMode = !developerMode;
+                    if (developerMode) {
+                        devLogBuffer.setLength(0);
+                        appendDevLog("开发者模式已开启，开始记录");
+                    } else {
+                        devLogBuffer.setLength(0);
+                    }
                     updateChangelogVisibility();
                     toast(developerMode ? "开发者模式已开启" : "已退出开发者模式");
-                }, 10_000L);
+                }, 5_000L);
             } else if (event.getActionMasked() == MotionEvent.ACTION_UP
                     || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
                 devLongPress.removeCallbacksAndMessages(null);
@@ -314,6 +331,7 @@ public class HomeActivity extends Activity
             changelogExpanded = !changelogExpanded;
             updateChangelogVisibility();
         });
+        devLogRow.setOnClickListener(v -> showDevLog());
         checkFirmwareRow.setOnClickListener(v -> checkFirmwareUpdate());
         updateFirmwareUi();
         checkFirmwareAvailability();
@@ -359,6 +377,67 @@ public class HomeActivity extends Activity
         if (!developerMode) changelogExpanded = false;
         changelogHistoryList.setVisibility(developerMode && changelogExpanded ? View.VISIBLE : View.GONE);
         changelogToggle.setText(changelogExpanded ? "收起历史" : "查看历史");
+        devLogRow.setVisibility(developerMode ? View.VISIBLE : View.GONE);
+        if (developerMode) {
+            devLogCount.setText(devLogBuffer.length() == 0
+                    ? "开发者模式 · 等待操作"
+                    : "本次记录 " + lineCount(devLogBuffer) + " 行 · 点击查看");
+        }
+    }
+
+    private static int lineCount(CharSequence text) {
+        int count = 1;
+        for (int i = 0; i < text.length(); i++) {
+            if (text.charAt(i) == '\n') count++;
+        }
+        return count;
+    }
+
+    private void appendDevLog(String message) {
+        if (!developerMode) return;
+        String line = new SimpleDateFormat("HH:mm:ss", Locale.CHINA).format(new Date())
+                + "  " + message;
+        runOnUiThread(() -> {
+            devLogBuffer.append(line).append('\n');
+            if (devLogBuffer.length() > 24000) {
+                devLogBuffer.delete(0, devLogBuffer.length() - 18000);
+            }
+            updateChangelogVisibility();
+            if (devLogText != null) devLogText.setText(devLogBuffer.toString());
+        });
+    }
+
+    private void showDevLog() {
+        if (!developerMode) return;
+        if (devLogDialog != null && devLogDialog.isShowing()) return;
+        devLogDialog = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
+        devLogDialog.setContentView(R.layout.dialog_dev_log);
+        devLogDialog.setCanceledOnTouchOutside(true);
+        devLogText = devLogDialog.findViewById(R.id.devLogText);
+        devLogText.setText(devLogBuffer.length() == 0 ? "暂无日志" : devLogBuffer.toString());
+        devLogDialog.findViewById(R.id.devLogClose).setOnClickListener(v -> {
+            devLogDialog.dismiss();
+            devLogText = null;
+        });
+        devLogDialog.findViewById(R.id.devLogClear).setOnClickListener(v -> {
+            devLogBuffer.setLength(0);
+            devLogText.setText("已清空");
+            updateChangelogVisibility();
+        });
+        Window window = devLogDialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams lp = window.getAttributes();
+            lp.dimAmount = 0.52f;
+            lp.gravity = Gravity.CENTER;
+            window.setAttributes(lp);
+        }
+        devLogDialog.show();
+        if (window != null) {
+            window.setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.94f),
+                    WindowManager.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private void initControl() {
@@ -372,6 +451,7 @@ public class HomeActivity extends Activity
             if (!isChecked) {
                 activeMode = MODE_NONE;
             }
+            appendDevLog(isChecked ? "总开关：开" : "总开关：关");
             updateControlUi();
         });
         modeSelfTest.setOnClickListener(v -> confirmSelfTest());
@@ -570,7 +650,7 @@ public class HomeActivity extends Activity
             connectSubtitle.setText("已连接 · 点击断开");
         } else {
             connectIcon.setText("+");
-            connectIcon.setTextColor(getColor(R.color.ls_accent));
+            connectIcon.setTextColor(Color.WHITE);
             connectTitle.setText("连接设备");
             connectSubtitle.setText("扫描附近的 LS 幻彩灯");
         }
@@ -633,12 +713,41 @@ public class HomeActivity extends Activity
             toggleMode(MODE_SELF_TEST);
             return;
         }
-        new AlertDialog.Builder(this)
-                .setTitle("开始自检？")
-                .setMessage("确认后灯带会执行自检效果。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("开始自检", (dialog, which) -> toggleMode(MODE_SELF_TEST))
-                .show();
+        showLsConfirm("开始自检？", "确认后灯带会执行自检效果。", "开始自检",
+                () -> toggleMode(MODE_SELF_TEST));
+    }
+
+    private void showLsConfirm(String title, String message, String confirmText, Runnable action) {
+        Dialog dialog = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
+        dialog.setContentView(R.layout.dialog_ls_confirm);
+        dialog.setCancelable(true);
+        dialog.setCanceledOnTouchOutside(true);
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+            window.addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND);
+            WindowManager.LayoutParams params = window.getAttributes();
+            params.dimAmount = 0.5f;
+            params.gravity = Gravity.CENTER;
+            window.setAttributes(params);
+        }
+        TextView titleView = dialog.findViewById(R.id.lsDialogTitle);
+        TextView messageView = dialog.findViewById(R.id.lsDialogMessage);
+        TextView cancel = dialog.findViewById(R.id.lsDialogCancel);
+        TextView confirm = dialog.findViewById(R.id.lsDialogConfirm);
+        titleView.setText(title);
+        messageView.setText(message);
+        confirm.setText(confirmText);
+        cancel.setOnClickListener(v -> dialog.dismiss());
+        confirm.setOnClickListener(v -> {
+            dialog.dismiss();
+            action.run();
+        });
+        dialog.show();
+        if (window != null) {
+            window.setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.88f),
+                    WindowManager.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private void toggleMode(int mode) {        if (!powerOn) {
@@ -649,6 +758,7 @@ public class HomeActivity extends Activity
             if (activeMode != MODE_MUSIC) {
                 activeMode = MODE_MUSIC;
                 sendModeFrame(AuroraProtocol.lsMusic(true, 1, 255), 3);
+                appendDevLog("模式开启：音乐律动");
             }
             updateControlUi();
             showMusicPage();
@@ -657,11 +767,25 @@ public class HomeActivity extends Activity
         if (activeMode == mode) {
             sendModeFrame(modeFrame(mode, false), 3);
             activeMode = MODE_NONE;
+            appendDevLog("模式关闭：" + modeName(mode));
         } else {
             activeMode = mode;
             sendModeFrame(modeFrame(mode, true), 3);
+            appendDevLog("模式开启：" + modeName(mode));
         }
         updateControlUi();
+    }
+
+    private String modeName(int mode) {
+        switch (mode) {
+            case MODE_SELF_TEST: return "自检";
+            case MODE_RUNNING: return "跑马灯";
+            case MODE_BREATHE: return "呼吸";
+            case MODE_FLAME: return "焰火";
+            case MODE_MUSIC: return "音乐律动";
+            case MODE_STEADY: return "常亮";
+            default: return "无";
+        }
     }
 
     private byte[] modeFrame(int mode, boolean on) {
@@ -763,13 +887,20 @@ public class HomeActivity extends Activity
         saveDevice(ble.currentAddress(), "LS 幻彩灯");
         prefs.edit().putString(KEY_LAST_ADDRESS, ble.currentAddress())
                 .putString(KEY_LAST_NAME, "LS 幻彩灯").apply();
+        appendDevLog("已连接：" + ble.currentAddress());
         if (!suppressConnectedToast) {
             toast("已连接");
         }
         suppressConnectedToast = false;
         suppressDisconnectToast = false;
         refreshConnectionCard();
-        showControlPage();
+        if (openControlOnReady) {
+            openControlOnReady = false;
+            showControlPage();
+        } else {
+            openControlOnReady = false;
+            showHomePage();
+        }
         updateFirmwareUi();
         if (scanSheet != null && scanSheet.isShowing()) scanSheet.onConnected();
     }
@@ -779,7 +910,9 @@ public class HomeActivity extends Activity
         stopMusic();
         powerOn = false;
         activeMode = MODE_NONE;
+        openControlOnReady = false;
         controlStatus.setText("未连接");
+        appendDevLog("已断开：" + (reason == null ? "" : reason));
         boolean silent = suppressDisconnectToast;
         suppressDisconnectToast = false;
         if (!silent) {
@@ -796,6 +929,7 @@ public class HomeActivity extends Activity
             return;
         }
         controlStatus.setText("未连接");
+        openControlOnReady = false;
         refreshConnectionCard();
         showHomePage();
         if (scanSheet != null && scanSheet.isShowing()) {
@@ -806,6 +940,9 @@ public class HomeActivity extends Activity
 
     @Override
     public void onFrameSent(String hex, int command) {
+        if (developerMode) {
+            appendDevLog("TX  " + hex);
+        }
     }
 
     @Override
@@ -834,6 +971,7 @@ public class HomeActivity extends Activity
 
     private void showScan() {
         if (scanSheet == null) scanSheet = new ScanSheet(this, this);
+        openControlOnReady = false;
         scanSheet.show();
         scanSheet.refresh();
     }
@@ -952,6 +1090,7 @@ public class HomeActivity extends Activity
                 } else {
                     if (scanSheet != null && scanSheet.isShowing()) scanSheet.dismiss();
                     toast("正在连接…");
+                    openControlOnReady = true;
                     ble.connectAddress(d.address, d.name);
                 }
             });
@@ -972,6 +1111,7 @@ public class HomeActivity extends Activity
                 } else {
                     if (scanSheet != null && scanSheet.isShowing()) scanSheet.dismiss();
                     toast("正在连接…");
+                    openControlOnReady = true;
                     ble.connectAddress(d.address, d.name);
                 }
             });
@@ -1187,11 +1327,8 @@ public class HomeActivity extends Activity
     private void confirmDeleteTrack(int index) {
         if (index < 0 || index >= musicTracks.size()) return;
         MusicTrack track = musicTracks.get(index);
-        new AlertDialog.Builder(this)
-                .setTitle("删除音乐？")
-                .setMessage("确定从列表删除“" + track.name + "”吗？")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("删除", (dialog, which) -> {
+        showLsConfirm("删除音乐？", "确定从列表删除“" + track.name + "”吗？", "删除",
+                () -> {
                     musicTracks.remove(track);
                     if (currentTrackIndex == index) {
                         stopMusic();
@@ -1200,8 +1337,7 @@ public class HomeActivity extends Activity
                     }
                     saveMusic();
                     refreshMusicList();
-                })
-                .show();
+                });
     }
 
     private void playTrack(int index) {
@@ -1470,6 +1606,7 @@ public class HomeActivity extends Activity
     @Override
     public void connectDevice(BleDevice device) {
         if (device == null) return;
+        openControlOnReady = false;
         if (scanSheet != null) scanSheet.showConnecting(device.displayName());
         ble.connect(device);
     }

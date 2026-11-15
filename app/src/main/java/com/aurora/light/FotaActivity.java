@@ -64,6 +64,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     private boolean busy;
     private boolean success;
     private boolean developerMode;
+    private boolean userDeclined;
+    private boolean promptShown;
+    private Dialog promptDialog;
     private int currentVersion = -1;
     private final StringBuilder logBuffer = new StringBuilder();
     private Dialog logDialog;
@@ -146,6 +149,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     }
 
     private void applyCheck() {
+        if (userDeclined) {
+            return;
+        }
         if (!manifestLoaded || !versionLoaded) {
             return;
         }
@@ -170,13 +176,22 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     }
 
     private void showConfirmDialog() {
+        if (promptShown || userDeclined) {
+            return;
+        }
+        promptShown = true;
         String msg = "当前固件：" + (currentVersion > 0 ? versionText(currentVersion) : "未知")
                 + "\n最新固件：" + (manifest.versionName == null || manifest.versionName.isEmpty()
                 ? versionText(manifest.versionCode) : manifest.versionName)
                 + "\n\n修复了已知问题\n\n是否升级？";
         showDialog("发现新固件", msg, "否", "是", () -> {
             showWarningDialog();
-        }, this::finish);
+        }, () -> {
+            userDeclined = true;
+            busy = false;
+            success = true;
+            finish();
+        });
     }
 
     private void showWarningDialog() {
@@ -335,7 +350,11 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
 
     private void showDialog(String title, String message, String noText, String yesText,
                             Runnable onYes, Runnable onNo) {
+        if (promptDialog != null && promptDialog.isShowing()) {
+            promptDialog.dismiss();
+        }
         Dialog dialog = new Dialog(this, android.R.style.Theme_Translucent_NoTitleBar);
+        promptDialog = dialog;
         dialog.setContentView(R.layout.dialog_fota_prompt);
         dialog.setCancelable(false);
         dialog.setCanceledOnTouchOutside(false);
@@ -402,6 +421,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     @Override
     public void onDisconnected(String reason) {
         appendLog("断开：" + reason);
+        if (userDeclined) {
+            return;
+        }
         if (busy && !success) {
             fail(reason == null ? "蓝牙连接已断开" : reason);
         }
@@ -410,6 +432,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     @Override
     public void onError(String message) {
         appendLog("BLE 错误：" + message);
+        if (userDeclined) {
+            return;
+        }
         if (busy) {
             fail(message);
         } else {
@@ -425,6 +450,9 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
     @Override
     public void onStatusChanged(int status, int value) {
         runOnUiThread(() -> {
+            if (userDeclined) {
+                return;
+            }
             switch (status) {
                 case ABOta.OTA_STATUS_READY:
                     appendLog("OTA Ready");
@@ -473,7 +501,7 @@ public class FotaActivity extends Activity implements ABOta.EventListener, FotaB
             versionLoaded = true;
             currentView.setText("当前固件：" + versionText(version));
             appendLog("当前固件：" + versionText(version) + " (0x" + Integer.toHexString(version) + ")");
-            if (busy || userConfirmed) {
+            if (busy || userConfirmed || userDeclined) {
                 return;
             }
             applyCheck();

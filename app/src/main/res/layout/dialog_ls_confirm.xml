@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_ls_dialog"
+    android:orientation="vertical"
+    android:paddingStart="24dp"
+    android:paddingTop="22dp"
+    android:paddingEnd="24dp"
+    android:paddingBottom="20dp">
+
+    <View
+        android:layout_width="34dp"
+        android:layout_height="4dp"
+        android:background="@drawable/bg_ls_rgb" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:letterSpacing="0.12"
+        android:text="LS · 提示"
+        android:textColor="@color/ls_tertiary"
+        android:textSize="9sp" />
+
+    <TextView
+        android:id="@+id/lsDialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="sans-serif-medium"
+        android:text="提示"
+        android:textColor="@color/ls_text"
+        android:textSize="21sp" />
+
+    <TextView
+        android:id="@+id/lsDialogMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:lineSpacingExtra="5dp"
+        android:text=""
+        android:textColor="@color/ls_secondary"
+        android:textSize="12sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/lsDialogCancel"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_ls_pill"
+            android:clickable="true"
+            android:focusable="true"
+            android:gravity="center"
+            android:text="取消"
+            android:textColor="@color/ls_secondary"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/lsDialogConfirm"
+            android:layout_width="0dp"
+            android:layout_height="46dp"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1.2"
+            android:background="@drawable/bg_ls_rgb"
+            android:clickable="true"
+            android:focusable="true"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center"
+            android:text="确定"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
+    </LinearLayout>
+</LinearLayout>
