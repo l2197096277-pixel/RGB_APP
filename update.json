@@ -1,8 +1,9 @@
 {
-  "versionCode": 21,
-  "versionName": "1.2.0",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.2.0/AuroraLight-v1.2.0.apk",
-  "sha256": "0af2c0d746165edec0b8ad78bb33e763cfea48c6206bcd96512a05dfd30d5b32",
-  "changelog": "### 新协议\n\n- 跑马灯、呼吸灯增加颜色字节。\n- 新增实际 RGB 灯珠数量设置，开灯前必须设置。\n- 我的设备同名去重，地址变化自动更新。\n- 历史设备直连失败自动扫描重连。\n\n详细说明：[v1.2.0.md](docs/changelogs/v1.2.0.md)\n\n---",
-  "force": true
+  "versionCode": 22,
+  "versionName": "1.2.1",
+  "apkUrl": "https://l2197096277-pixel.github.io/RGB_APP/AuroraLight-v1.2.1.apk",
+  "apkUrlFallback": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.2.1/AuroraLight-v1.2.1.apk",
+  "sha256": "1251932F2F7421A9EF414D728BD6B7A81E42825127C74598E626E4E023705388",
+  "changelog": "v1.2.1\n- 更新 APK 优先从 GitHub Pages 下载，解决 github.com 连接超时。\n- 增加备用下载地址和下载失败重试/浏览器打开。\n- 保留新协议、灯珠数量、跑马/呼吸颜色、设备去重。",
+  "force": false
 }
