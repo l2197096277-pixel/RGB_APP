@@ -4,8 +4,8 @@
 
 源码是**原生 Java 8 + 标准 Gradle 工程**，可以直接用 Android Studio 打开、调试和修改。
 
-- **安装包**：[`dist/AuroraLight-v1.1.4.apk`](dist/AuroraLight-v1.1.4.apk)
-- **源码包**：[`dist/AuroraLight-v1.1.4-source.zip`](dist/AuroraLight-v1.1.4-source.zip)
+- **安装包**：[`dist/AuroraLight-v1.1.5.apk`](dist/AuroraLight-v1.1.5.apk)
+- **源码包**：[`dist/AuroraLight-v1.1.5-source.zip`](dist/AuroraLight-v1.1.5-source.zip)
 - **使用手册**：[`docs/使用手册.md`](docs/使用手册.md)
 - **BLE 协议规范**：[`docs/BLE协议规范.md`](docs/BLE协议规范.md)
 - **ESP32 固件烧录指南**：[`docs/固件烧录指南.md`](docs/固件烧录指南.md)
@@ -13,8 +13,10 @@
 - **测试与验证报告**：[`docs/测试与验证报告.md`](docs/测试与验证报告.md)
 - **自动更新说明**：[`docs/自动更新说明.md`](docs/自动更新说明.md)
 - **灯带固件 OTA 说明**：[`docs/灯带固件OTA升级说明.md`](docs/灯带固件OTA升级说明.md)
+- **新蓝牙协议 v1.0.0**：[`docs/APP通讯蓝牙协议-v1.0.0-20261115.pdf`](docs/APP通讯蓝牙协议-v1.0.0-20261115.pdf)
+- **v1.1.5 优化说明**：[`docs/新v1.1.5-优化说明.txt`](docs/新v1.1.5-优化说明.txt)
 - **更新日志**：[`CHANGELOG.md`](CHANGELOG.md)
-- **PDF 合集**：[`docs/AuroraLight-Manual-v1.1.4.pdf`](docs/AuroraLight-Manual-v1.1.4.pdf)
+- **PDF 合集**：[`docs/AuroraLight-Manual-v1.1.5.pdf`](docs/AuroraLight-Manual-v1.1.5.pdf)
 - **ESP32 参考固件**：[`firmware/aurora_light_esp32/aurora_light_esp32.ino`](firmware/aurora_light_esp32/aurora_light_esp32.ino)
 
 ![App icon](assets/icon-master.png)
@@ -32,12 +34,13 @@
 - 四种光效：流光跑马、呼吸、律动、火焰
 - 九种协议颜色：红、橙、黄、绿、青、蓝、紫、白、品红
 - 三档律动速度
-- 连接状态胶囊：未连接 / 连接中 / 已连接 / 演示模式
+- 连接状态：未连接 / 连接中 / 已连接
 - 记住上次连接的灯带地址，启动时自动连接
 - 启动检查 GitHub 更新，弹窗下载并拉起系统安装
 - 灯带固件 OTA：检查更新、红点、进度、成功/失败提示
-- 无硬件也可进入演示模式，完整体验 UI
-- **三页界面**：控制 / 光效 / 我的，支持左右滑动和底部切换
+- **两页界面**：光屿 / 我的，连接后进入 LS 幻彩灯控制子页
+- 产品广播 FF01/AA01 识别，连接后读 FF02 校验
+- 本地音乐 + 鼓点律动
 - 未连接蓝牙时，所有控制按钮提示先连接；总开关未开启时提示先开灯
 - 关灯后所有高光熄灭、亮度归 0
 - 亮度拖动时实时发码，松手后再补发 3 次
@@ -62,13 +65,13 @@
 
 ## 安装
 
-1. 把 `dist/AuroraLight-v1.1.4.apk` 发送到 Android 手机。
+1. 把 `dist/AuroraLight-v1.1.5.apk` 发送到 Android 手机。
 2. 点击安装，首次需允许“安装未知应用”。
 3. 打开 App，授予“附近的设备”权限（Android 11 及以下还需定位权限和定位开关）。
 4. 给灯带通电，点“连接灯光”，选择 `AuroraLight-XXXX`。
 
 ```bash
-adb install -r dist/AuroraLight-v1.1.4.apk
+adb install -r dist/AuroraLight-v1.1.5.apk
 ```
 
 ## 协议速览
@@ -89,13 +92,13 @@ adb install -r dist/AuroraLight-v1.1.4.apk
 
 ## 重要兼容性说明
 
-App 使用**中科蓝讯 RGB 协议**。手机是主机，灯带是从机；灯带固件必须：
+App 使用 **FF12 / FF01 / FF02 / FF03** 新协议；OTA 继续使用 FF14/FF15。完整协议见 [新蓝牙协议 PDF](docs/APP通讯蓝牙协议-v1.0.0-20261115.pdf)。
 
 1. 提供 `0xFF12` 服务，以及 `0xFF01` / `0xFF02` / `0xFF03` 特征值；
 2. 按 `11 | CMD | LEN | DATA | CHECKSUM` 帧格式解析并执行命令；
 3. 广播 FF12 不是连接前提，但建议广播，便于 App 识别和排序；旧固件 `BBB0` 仅用于扫描兼容识别。
 
-因此它**不会直接兼容**市面上 UUID 和指令都不同的商业灯带。若你的灯带是可编程控制器（ESP32 等），可烧录 [`firmware/aurora_light_esp32`](firmware/aurora_light_esp32/) 中的参考固件，或按协议适配现有固件。没有硬件时可用 App 内的演示模式。
+因此它**不会直接兼容**市面上 UUID 和指令都不同的商业灯带。若你的灯带是可编程控制器（ESP32 等），需按新协议适配固件。
 
 ## 用 Android Studio 开发（推荐）
 
@@ -105,7 +108,7 @@ App 使用**中科蓝讯 RGB 协议**。手机是主机，灯带是从机；灯�
 2. `File → Open`，选择本目录 `aurora-light`。
 3. 等待 Gradle Sync。首次会下载 Gradle 8.9 和 Android Gradle Plugin 8.7.3。
 4. 手机开启 USB 调试，连接电脑，点右上角 **Run ▶**。
-5. 没接手机时也可以先用 App 内的演示模式看界面。
+5. 使用前先连接 LS 幻彩灯。
 
 > Debug 和 Release 都使用项目签名 `keystore/aurora-release.jks`，所以 Android Studio 直接运行也能覆盖安装现有 APK；正式发版前记得提升 `versionCode`。
 
@@ -198,5 +201,5 @@ aurora-light/
 
 ---
 
-版本 v1.1.4 · 2026-11 · Android 6.0+
+版本 v1.1.5 · 2026-11 · Android 6.0+
 

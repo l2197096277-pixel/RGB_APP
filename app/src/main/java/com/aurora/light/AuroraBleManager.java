@@ -82,6 +82,9 @@ public class AuroraBleManager {
     private int writeRetries;
     private boolean manualDisconnect;
 
+    private final Runnable productReadTimeout = () -> fail(
+            "\u8bbe\u5907\u578b\u53f7\u6821\u9a8c\u8d85\u65f6");
+
     private String currentName = "幻彩灯";
     private String currentAddress = "";
 
@@ -290,6 +293,11 @@ public class AuroraBleManager {
         return true;
     }
 
+    /** 音乐律动单次发送：不重复 3 次，由调用方做节流。 */
+    public boolean sendReactive(byte[] frame) {
+        return send(frame);
+    }
+
     /**
      * 同一条命令连续发送 times 次，间隔 intervalMs。
      * 协议要求“间隔 100ms 发送 5 次”，由 MainActivity 调用。
@@ -439,6 +447,7 @@ public class AuroraBleManager {
     @SuppressLint("MissingPermission")
     private void closeGatt() {
         handler.removeCallbacks(writeTimeout);
+        handler.removeCallbacks(productReadTimeout);
         if (gatt != null) {
             try {
                 gatt.disconnect();
@@ -656,6 +665,7 @@ public class AuroraBleManager {
                 statusCharacteristic = null;
                 controlNoResponse = false;
                 handler.removeCallbacks(writeTimeout);
+                handler.removeCallbacks(productReadTimeout);
                 if (wasReady) {
                     everReady = false;
                 }
@@ -705,6 +715,44 @@ public class AuroraBleManager {
             statusCharacteristic = service.getCharacteristic(AuroraProtocol.STATUS_UUID);
             // 普通控制只写 FF01；FF02 的 CCCD 写会占用 GATT 操作，
             // 紧接同步指令时会导致 writeCharacteristic 返回 false（“写入失败”误报）。
+            if (statusCharacteristic == null) {
+                fail("\u8bbe\u5907\u7f3a\u5c11 FF02 \u4ea7\u54c1\u4fe1\u606f\u7279\u5f81\u503c");
+                return;
+            }
+            try {
+                boolean started = g.readCharacteristic(statusCharacteristic);
+                if (!started) {
+                    fail("\u8bbe\u5907\u578b\u53f7\u6821\u9a8c\u5931\u8d25");
+                    return;
+                }
+                handler.postDelayed(productReadTimeout, 3000L);
+            } catch (SecurityException e) {
+                fail("\u7f3a\u5c11\u84dd\u7259\u8bfb\u53d6\u6743\u9650");
+            }
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt g,
+                                         BluetoothGattCharacteristic characteristic,
+                                         int status) {
+            if (g != gatt || characteristic == null) {
+                return;
+            }
+            if (statusCharacteristic == null
+                    || !statusCharacteristic.getUuid().equals(characteristic.getUuid())) {
+                return;
+            }
+            handler.removeCallbacks(productReadTimeout);
+            byte[] value = characteristic.getValue();
+            if (status != BluetoothGatt.GATT_SUCCESS || value == null || value.length < 2) {
+                fail("\u8bbe\u5907\u578b\u53f7\u6821\u9a8c\u5931\u8d25");
+                return;
+            }
+            int productId = (value[0] & 0xFF) | ((value[1] & 0xFF) << 8);
+            if (productId != AuroraProtocol.LS_PRODUCT_ID) {
+                fail("\u8bbe\u5907\u578b\u53f7\u4e0d\u5339\u914d");
+                return;
+            }
             markReady();
         }
 

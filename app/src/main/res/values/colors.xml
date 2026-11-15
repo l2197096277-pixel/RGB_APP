@@ -22,4 +22,15 @@
     <color name="icon_muted">#8A95B3</color>
     <color name="danger">#FF7A7A</color>
     <color name="success">#5BF0D0</color>
+
+    <color name="ls_bg">#F7F9FC</color>
+    <color name="ls_card">#FFFFFF</color>
+    <color name="ls_card_soft">#F1F5FA</color>
+    <color name="ls_text">#142033</color>
+    <color name="ls_secondary">#68788D</color>
+    <color name="ls_tertiary">#9AA8B8</color>
+    <color name="ls_stroke">#E4EAF2</color>
+    <color name="ls_accent">#4F7CFF</color>
+    <color name="ls_mint">#20B6A3</color>
+    <color name="ls_danger">#E5484D</color>
 </resources>

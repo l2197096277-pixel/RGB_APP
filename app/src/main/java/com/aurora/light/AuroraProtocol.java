@@ -37,6 +37,27 @@ public final class AuroraProtocol {
     public static final int MAX_DATA = 32;
     public static final String DEVICE_PREFIX = "AuroraLight";
 
+    // 新协议（V1.0.0-2026-11-15）
+    public static final int LS_PRODUCT = 0x00;
+    public static final int LS_TAIL = 0x0A;
+    public static final int LS_MODE_POWER = 0x01;
+    public static final int LS_MODE_SELF_TEST = 0xFF;
+    public static final int LS_MODE_RUNNING = 0x02;
+    public static final int LS_MODE_BREATHE = 0x03;
+    public static final int LS_MODE_FLAME = 0x04;
+    public static final int LS_MODE_MUSIC = 0x05;
+    public static final int LS_MODE_STEADY = 0x0F;
+    public static final int LS_PRODUCT_ID = 0xAA01;
+
+    public static final int[] LS_COLOR_RGB = {
+            0xFFFFFFFF, 0xFFFF3B30, 0xFFFF9500,
+            0xFFFFCC00, 0xFF34C759, 0xFF32ADE6,
+            0xFF007AFF, 0xFFAF52DE, 0xFFFF2D55
+    };
+    public static final String[] LS_COLOR_NAMES = {
+            "白", "红", "橙", "黄", "绿", "青", "蓝", "紫", "品红"
+    };
+
     // 协议表定义
     public static final int CMD_POWER = 0x01;
     public static final int CMD_MODE_RUNNING = 0x02; // 跑马灯
@@ -87,6 +108,63 @@ public final class AuroraProtocol {
 
     public static byte[] power(boolean on) {
         return frame(CMD_POWER, new byte[]{(byte) (on ? 1 : 0)});
+    }
+
+    /* ===== 新协议 V1.0.0-2026-11-15 ===== */
+
+    public static byte[] lsPower(boolean on) {
+        return lsFrame(LS_MODE_POWER, (byte) (on ? 1 : 0));
+    }
+
+    public static byte[] lsSelfTest(boolean on) {
+        return lsFrame(LS_MODE_SELF_TEST, (byte) (on ? 1 : 0));
+    }
+
+    public static byte[] lsRunning(boolean on) {
+        return lsFrame(LS_MODE_RUNNING, (byte) (on ? 1 : 0));
+    }
+
+    public static byte[] lsBreathe(boolean on) {
+        return lsFrame(LS_MODE_BREATHE, (byte) (on ? 1 : 0));
+    }
+
+    public static byte[] lsFlame(boolean on, int colorIndex) {
+        return lsFrame(LS_MODE_FLAME,
+                (byte) (on ? 1 : 0),
+                (byte) clamp(colorIndex, 1, 9));
+    }
+
+    public static byte[] lsMusic(boolean on, int colorIndex, int brightness) {
+        return lsFrame(LS_MODE_MUSIC,
+                (byte) (on ? 1 : 0),
+                (byte) clamp(colorIndex, 1, 9),
+                (byte) clamp(brightness, 50, 255));
+    }
+
+    public static byte[] lsSteady(boolean on, int count, int colorIndex, int brightness) {
+        return lsFrame(LS_MODE_STEADY,
+                (byte) (on ? 1 : 0),
+                (byte) clamp(count, 1, 255),
+                (byte) clamp(colorIndex, 1, 9),
+                (byte) clamp(brightness, 0, 255));
+    }
+
+    /** 新协议：11 00 模式 长度 数据... 0A，无校验和。 */
+    public static byte[] lsFrame(int mode, byte... data) {
+        if (data == null) {
+            data = new byte[0];
+        }
+        if (data.length > MAX_DATA) {
+            throw new IllegalArgumentException("data too large");
+        }
+        byte[] out = new byte[5 + data.length];
+        out[0] = (byte) HEADER;
+        out[1] = (byte) LS_PRODUCT;
+        out[2] = (byte) mode;
+        out[3] = (byte) data.length;
+        System.arraycopy(data, 0, out, 4, data.length);
+        out[out.length - 1] = (byte) LS_TAIL;
+        return out;
     }
 
     public static byte[] brightness(int percent) {
