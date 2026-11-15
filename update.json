@@ -1,8 +1,8 @@
 {
-  "versionCode": 17,
-  "versionName": "1.1.6",
-  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.6/AuroraLight-v1.1.6.apk",
-  "sha256": "02baee4e3a9cb91e6532d03d51da5ed94456aa2624c83c4852b42b5994c42460",
-  "changelog": "### 修复与优化\n\n- 我的设备去重、连接状态、断开/连接按钮。\n- 已连接时主界面显示当前产品，可点击断开。\n- 修复音乐鼓点启动几下后停止发码。\n- 音乐界面返回等同退出模式，发送停止码并停止播放。\n- 音乐频谱动态条。\n- 模式按钮产品渐变、颜色横向滚动 + 名称。\n- 常亮亮度拖动持续发码。\n- 火焰灯颜色动态预览。\n- 返回箭头改为矢量图标。\n\n详细说明：[v1.1.6.md](docs/changelogs/v1.1.6.md)\n\n---",
+  "versionCode": 18,
+  "versionName": "1.1.7",
+  "apkUrl": "https://github.com/l2197096277-pixel/RGB_APP/releases/download/v1.1.7/AuroraLight-v1.1.7.apk",
+  "sha256": "a98e7bf7df666888b8fec6d0ce516d6ea1cccace520af3f8953d56853b98e1fc",
+  "changelog": "### 新增与修复\n\n- 删除音乐二次确认。\n- 自检二次确认。\n- “火焰灯”改为“焰火”，预览改为向上不规则火苗。\n- 返回箭头改矢量。\n- 使用用户提供的新 App 图标。\n- 包名、签名、自动更新、OTA 全部保留。\n\n详细说明：[v1.1.7.md](docs/changelogs/v1.1.7.md)\n\n---",
   "force": true
 }
